@@ -1,0 +1,21 @@
+<resources>
+    <string name="logo">Logo</string>
+    <string name="app_name">AppChatSocketIO</string>
+    <string name="register">REGISTER</string>
+    <string name="phone">Phone</string>
+    <string name="username">Username</string>
+    <string name="password">Password</string>
+    <string name="confirm_password">Confirm Password</string>
+    <string name="create_new_account">Create New Account</string>
+    <string name="already_have_an_account">Already have an account ?</string>
+    <string name="sign_in">Sign in</string>
+    <string name="register_here">Register here</string>
+    <string name="don_t_have_an_account">Don\'t have an account ?</string>
+    <string name="add_your_display_name">Add Your Display Name</string>
+    <string name="add_your_display_name_so_friends_can_find_you">Add your display name so friends can find you</string>
+    <string name="display_name">Display Name</string>
+    <string name="done">DONE</string>
+    <string name="next">NEXT</string>
+    <string name="send_message">Send Message</string>
+    <string name="origin">http://192.168.0.105:3000</string>
+</resources>
