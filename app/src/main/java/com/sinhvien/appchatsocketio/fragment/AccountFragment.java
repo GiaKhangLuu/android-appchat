@@ -22,7 +22,7 @@ public class AccountFragment extends Fragment {
     }
 
     private void Init(View view) {
-        tvDisplayName = view.findViewById(R.id.tvName);
+        tvDisplayName = view.findViewById(R.id.tvDisplayName);
         tvDisplayName.setText(user.getDisplayName());
     }
 

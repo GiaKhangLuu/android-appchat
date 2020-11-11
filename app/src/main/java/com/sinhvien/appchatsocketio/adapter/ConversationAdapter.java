@@ -39,7 +39,7 @@ public class ConversationAdapter extends ArrayAdapter<Conversation> {
 
     private void SetView(Conversation conversation, View view) {
         TextView tvName, tvMessge, tvTime;
-        tvName = view.findViewById(R.id.tvName);
+        tvName = view.findViewById(R.id.tvDisplayName);
         tvMessge = view.findViewById(R.id.tvMessage);
         tvTime = view.findViewById(R.id.tvTime);
         tvName.setText(conversation.getName());

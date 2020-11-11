@@ -1,7 +1,6 @@
-package com.sinhvien.appchatsocketio.model;
+package com.sinhvien.appchatsocketio.helper;
 
-import com.sinhvien.appchatsocketio.R;
-import com.sinhvien.appchatsocketio.adapter.SearchedUserAdapter;
+import com.sinhvien.appchatsocketio.model.User;
 
 import org.json.JSONArray;
 import org.json.JSONObject;

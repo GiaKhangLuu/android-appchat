@@ -9,7 +9,7 @@
     android:layout_height="match_parent">
 
     <TextView
-        android:id="@+id/tvName"
+        android:id="@+id/tvDisplayName"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
@@ -29,8 +29,8 @@
         android:textColor="#2B2929"
         android:textSize="14sp"
         android:layout_marginBottom="2dp"
-        app:layout_constraintStart_toStartOf="@+id/tvName"
-        app:layout_constraintTop_toBottomOf="@+id/tvName" />
+        app:layout_constraintStart_toStartOf="@+id/tvDisplayName"
+        app:layout_constraintTop_toBottomOf="@+id/tvDisplayName" />
 
     <TextView
         android:id="@+id/tvTime"
@@ -43,5 +43,5 @@
         android:textSize="14sp"
         android:textColor="@color/colorBlack"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/tvName" />
+        app:layout_constraintTop_toTopOf="@+id/tvDisplayName" />
 </androidx.constraintlayout.widget.ConstraintLayout>

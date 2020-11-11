@@ -18,9 +18,9 @@ import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.sinhvien.appchatsocketio.R;
-import com.sinhvien.appchatsocketio.adapter.SearchedUserAdapter;
+import com.sinhvien.appchatsocketio.adapter.SearchedUserAddToGroupAdapter;
 import com.sinhvien.appchatsocketio.adapter.SelectedMemberAdapter;
-import com.sinhvien.appchatsocketio.model.Ultilities;
+import com.sinhvien.appchatsocketio.helper.Ultilities;
 import com.sinhvien.appchatsocketio.helper.CustomJsonArrayRequest;
 import com.sinhvien.appchatsocketio.helper.VolleySingleton;
 import com.sinhvien.appchatsocketio.model.User;
@@ -58,7 +58,7 @@ public class CreateGroupActivity extends AppCompatActivity {
         userSelections = Ultilities.GetUserSelection();
         searchedUsers.clear();
         userSelections.clear();
-        searchedUserAdapter = new SearchedUserAdapter(this, R.layout.row_search_user, searchedUsers);
+        searchedUserAdapter = new SearchedUserAddToGroupAdapter(this, R.layout.row_search_user_to_add, searchedUsers);
         userSelectionAdapter = new SelectedMemberAdapter(this, R.layout.row_delete_user, userSelections);
         lvSearchedUsers.setAdapter(searchedUserAdapter);
         lvGroupMembers.setAdapter(userSelectionAdapter);
@@ -124,10 +124,6 @@ public class CreateGroupActivity extends AppCompatActivity {
 
     public int IndexOfUserInUserSelection(User user) {
         return Ultilities.GetPositionOfUserInUserSelection(user);
-    }
-
-    public int IndexOfUserInSearchedUser(User user) {
-        return Ultilities.GetPositionOfUserInSearchedUsers(user);
     }
 
     public void SetUncheckFromSearchedUser(User user) {
