@@ -1,6 +1,9 @@
 package com.sinhvien.appchatsocketio.fragment;
 
+import android.content.Intent;
 import android.os.Bundle;
+import android.os.MessageQueue;
+import android.text.method.SingleLineTransformationMethod;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -18,11 +21,15 @@ import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonArrayRequest;
+import com.android.volley.toolbox.JsonObjectRequest;
 import com.sinhvien.appchatsocketio.R;
+import com.sinhvien.appchatsocketio.activity.MessageActivity;
 import com.sinhvien.appchatsocketio.adapter.SearchUserToChatAdapter;
 import com.sinhvien.appchatsocketio.helper.ChatHelper;
 import com.sinhvien.appchatsocketio.helper.CustomJsonArrayRequest;
 import com.sinhvien.appchatsocketio.helper.VolleySingleton;
+import com.sinhvien.appchatsocketio.model.Conversation;
 import com.sinhvien.appchatsocketio.model.User;
 
 import org.json.JSONArray;
@@ -45,15 +52,12 @@ public class SearchFragment extends Fragment {
     private ArrayAdapter adapter;
     private Socket socket;
 
-    public SearchFragment(User user) {
-        this.user = user;
-    }
-
     private void Init(View view) {
-        searchedUsers = new ArrayList<>();
-        adapter = new SearchUserToChatAdapter(getContext(), R.layout.row_search_user_to_chat, searchedUsers);
         searchView = view.findViewById(R.id.searchView);
         lvShowUser = view.findViewById(R.id.lvShowUser);
+        user = (User) getArguments().getSerializable("User");
+        searchedUsers = new ArrayList<>();
+        adapter = new SearchUserToChatAdapter(getContext(), R.layout.row_search_user_to_chat, searchedUsers);
         lvShowUser.setAdapter(adapter);
         socket = ChatHelper.getInstace(getContext()).GetSocket();
         if(socket.connected()) {
@@ -118,6 +122,50 @@ public class SearchFragment extends Fragment {
             return false;
         }
     };
+
+    private void MoveToMessageActivity(String roomId, String searchedUserDisplayName) {
+        Conversation conversation = new Conversation();
+        conversation.setRoomId(roomId);
+        conversation.setName(searchedUserDisplayName);
+        Intent intent = new Intent(getContext(), MessageActivity.class);
+        intent.putExtra("User", user);
+        intent.putExtra("Conversation", conversation);
+        startActivity(intent);
+    }
+
+    public void FetchSingleChat(final String searchedUserId, final String searchedUserDisplayName) {
+        String url = getString(R.string.origin) + "/api/room/singleChat";
+        HashMap<String, String> params = new HashMap<>();
+        params.put("userId", user.getIdUser());
+        params.put("searchedUserId", searchedUserId);
+        CustomJsonArrayRequest request = new CustomJsonArrayRequest(Request.Method.POST,
+                url,
+                new JSONObject(params),
+                new Response.Listener<JSONArray>() {
+                    @Override
+                    public void onResponse(JSONArray response) {
+                        // Case user and searchedUser used to chat => render old messages
+                        if(response.length() != 0) {
+                            try {
+                                String roomId = response.getJSONObject(0).getString("_id");
+                                MoveToMessageActivity(roomId, searchedUserDisplayName);
+                            } catch (JSONException e) {
+                                e.printStackTrace();
+                            }
+                        } else {
+                            MoveToMessageActivity(null, searchedUserDisplayName);
+                        }
+                    }
+                },
+                new Response.ErrorListener() {
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+
+                    }
+                });
+        RequestQueue messageQueue = VolleySingleton.getInstance(getContext()).getRequestQueue();
+        messageQueue.add(request);
+    }
 
     @Nullable
     @Override

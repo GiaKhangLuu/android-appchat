@@ -45,10 +45,6 @@ public class ConversationsFragment extends Fragment {
     private ArrayList<Conversation> conversations;
     private ArrayAdapter<Conversation>  adapter;
 
-    public ConversationsFragment(User user) {
-        this.user = user;
-    }
-
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -102,7 +98,7 @@ public class ConversationsFragment extends Fragment {
                 Conversation cv = new Conversation();
                 conversations.add(cv);
                 cv.setRoomId(obj.getString("roomId"));
-                // If roomName = "" => set roomName = another userDisplayName
+                // If roomName = "" => set roomName = displayName of your friend
                 if(obj.getString("name").isEmpty()) {
                     FetchMemberDisplayName(cv.getRoomId(), user.getIdUser(), i);
                 } else {
@@ -160,6 +156,7 @@ public class ConversationsFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+        user = (User) getArguments().getSerializable("User");
         Init(view);
         lvMain.setOnItemClickListener(onItemClickListener);
     }

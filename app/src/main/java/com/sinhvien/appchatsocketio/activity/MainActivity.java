@@ -55,11 +55,11 @@ public class MainActivity extends AppCompatActivity {
                     Fragment fragment = null;
                     switch (item.getItemId()) {
                         case R.id.itemMessage:
-                            fragment = new ConversationsFragment(user);
+                            fragment = new ConversationsFragment();
                             LoadFragment(fragment);
                             break;
                         case R.id.itemSearch:
-                            fragment = new SearchFragment(user);
+                            fragment = new SearchFragment();
                             LoadFragment(fragment);
                             break;
                         case R.id.itemAccount:
@@ -76,6 +76,9 @@ public class MainActivity extends AppCompatActivity {
             };
 
     private void LoadFragment(Fragment fragment) {
+        Bundle bundle = new Bundle();
+        bundle.putSerializable("User", user);
+        fragment.setArguments(bundle);
         getSupportFragmentManager().beginTransaction().replace(R.id.containerMain, fragment).commit();
     }
 
@@ -103,7 +106,7 @@ public class MainActivity extends AppCompatActivity {
                     public void onResponse(JSONObject response) {
                         SetUser(response);
                         bottomNav.setOnNavigationItemSelectedListener(navItemSelectedListener);
-                        LoadFragment(new ConversationsFragment(user));
+                        LoadFragment(new ConversationsFragment());
                         //Log.i("User", user.getDisplayName());
                     }
                 },
