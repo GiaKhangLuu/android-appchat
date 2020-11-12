@@ -43,10 +43,6 @@ public class GroupFragment extends Fragment {
     private ArrayAdapter<Room> adapter;
     private User user;
 
-    public GroupFragment(User user) {
-        this.user = user;
-    }
-
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -54,16 +50,17 @@ public class GroupFragment extends Fragment {
     }
 
     private void Init(View view) {
+        user = (User) getArguments().getSerializable("User");
         btnCreateRoom = view.findViewById(R.id.btnCreateRoom);
         lvRooms = view.findViewById(R.id.lvRooms);
         rooms = new ArrayList<>();
         adapter = new RoomAdapter(getContext(), R.layout.row_room, rooms);
-        FetchInfoRooms();
+        FetchMultiMembersRoomsOfUser();
         lvRooms.setAdapter(adapter);
     }
 
-    private void FetchInfoRooms() {
-        String url = getString(R.string.origin) + "/getInfoRooms";
+    private void FetchMultiMembersRoomsOfUser() {
+        String url = getString(R.string.origin) + "/api/room/multiMembersRooms";
         HashMap<String, String> param = new HashMap<>();
         param.put("userId", user.getIdUser());
         CustomJsonArrayRequest request = new CustomJsonArrayRequest(Request.Method.POST,

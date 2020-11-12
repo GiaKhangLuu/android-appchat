@@ -1,6 +1,8 @@
 package com.sinhvien.appchatsocketio.model;
 
-public class Room {
+import java.io.Serializable;
+
+public class Room implements Serializable {
     private String idRoom, name, createDate;
 
     public Room() {

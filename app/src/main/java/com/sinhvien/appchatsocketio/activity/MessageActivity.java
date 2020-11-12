@@ -29,6 +29,7 @@ import com.sinhvien.appchatsocketio.helper.CustomJsonArrayRequest;
 import com.sinhvien.appchatsocketio.helper.VolleySingleton;
 import com.sinhvien.appchatsocketio.model.Conversation;
 import com.sinhvien.appchatsocketio.model.Message;
+import com.sinhvien.appchatsocketio.model.Room;
 import com.sinhvien.appchatsocketio.model.User;
 
 import org.json.JSONArray;
@@ -47,7 +48,7 @@ public class MessageActivity extends AppCompatActivity {
     private Button btnSend;
     private Toolbar toolbarTitle;
     // Data
-    private Conversation conversation;
+    private Room room;
     private User user;
     private ArrayList<Message> messages;
     private ArrayAdapter<Message> adapter;
@@ -64,12 +65,12 @@ public class MessageActivity extends AppCompatActivity {
         // Set data
         messages = new ArrayList<>();
         user = (User) getIntent().getSerializableExtra("User");
-        conversation = (Conversation) getIntent().getSerializableExtra("Conversation");
+        room = (Room) getIntent().getSerializableExtra("Room");
         adapter = new MessageAdapter(getApplicationContext(), R.layout.line_message, messages);
         FetchMessagesInRoom();
         //FetchRoomName();
         lvMain.setAdapter(adapter);
-        getSupportActionBar().setTitle(conversation.getName());
+        getSupportActionBar().setTitle(room.getName());
     }
 
     /*private void FetchRoomName() throws JSONException {
@@ -119,7 +120,7 @@ public class MessageActivity extends AppCompatActivity {
     private void FetchMessagesInRoom() {
         String url = getString(R.string.origin) + "/api/message/messages";
         HashMap<String, String> params = new HashMap<>();
-        params.put("roomId", conversation.getRoomId());
+        params.put("roomId", room.getIdRoom());
         CustomJsonArrayRequest request = new CustomJsonArrayRequest(Request.Method.POST,
                 url,
                 new JSONObject(params),

@@ -29,6 +29,7 @@ import com.sinhvien.appchatsocketio.helper.CustomJsonArrayRequest;
 import com.sinhvien.appchatsocketio.helper.VolleySingleton;
 import com.sinhvien.appchatsocketio.model.Conversation;
 import com.sinhvien.appchatsocketio.model.Message;
+import com.sinhvien.appchatsocketio.model.Room;
 import com.sinhvien.appchatsocketio.model.User;
 
 import org.json.JSONArray;
@@ -146,9 +147,12 @@ public class ConversationsFragment extends Fragment {
         @Override
         public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
             Conversation conversation = adapter.getItem(position);
+            Room room = new Room();
+            room.setName(conversation.getName());
+            room.setIdRoom(conversation.getRoomId());
             Intent intent = new Intent(getContext(), MessageActivity.class);
             intent.putExtra("User", user);
-            intent.putExtra("Conversation", conversation);
+            intent.putExtra("Room", room);
             startActivity(intent);
         }
     };

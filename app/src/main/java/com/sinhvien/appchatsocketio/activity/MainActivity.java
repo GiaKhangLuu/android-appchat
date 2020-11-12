@@ -67,7 +67,7 @@ public class MainActivity extends AppCompatActivity {
                             LoadFragment(fragment);
                             break;
                         case R.id.itemGroup:
-                            fragment = new GroupFragment(user);
+                            fragment = new GroupFragment();
                             LoadFragment(fragment);
                             break;
                     }

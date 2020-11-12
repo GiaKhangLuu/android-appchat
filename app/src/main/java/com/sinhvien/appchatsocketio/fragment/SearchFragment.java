@@ -30,6 +30,7 @@ import com.sinhvien.appchatsocketio.helper.ChatHelper;
 import com.sinhvien.appchatsocketio.helper.CustomJsonArrayRequest;
 import com.sinhvien.appchatsocketio.helper.VolleySingleton;
 import com.sinhvien.appchatsocketio.model.Conversation;
+import com.sinhvien.appchatsocketio.model.Room;
 import com.sinhvien.appchatsocketio.model.User;
 
 import org.json.JSONArray;
@@ -124,12 +125,12 @@ public class SearchFragment extends Fragment {
     };
 
     private void MoveToMessageActivity(String roomId, String searchedUserDisplayName) {
-        Conversation conversation = new Conversation();
-        conversation.setRoomId(roomId);
-        conversation.setName(searchedUserDisplayName);
+        Room room = new Room();
+        room.setIdRoom(roomId);
+        room.setName(searchedUserDisplayName);
         Intent intent = new Intent(getContext(), MessageActivity.class);
         intent.putExtra("User", user);
-        intent.putExtra("Conversation", conversation);
+        intent.putExtra("Room", room);
         startActivity(intent);
     }
 
