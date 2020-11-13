@@ -101,7 +101,7 @@ public class ConversationsFragment extends Fragment {
                 cv.setRoomId(obj.getString("roomId"));
                 // If roomName = "" => set roomName = displayName of your friend
                 if(obj.getString("name").isEmpty()) {
-                    FetchMemberDisplayName(cv.getRoomId(), user.getIdUser(), i);
+                    FetchMemberDisplayName(cv.getRoomId(), user.getIdUser(), cv);
                 } else {
                     cv.setName(obj.getString("name"));
                 }
@@ -113,7 +113,7 @@ public class ConversationsFragment extends Fragment {
         }
     }
 
-    private void FetchMemberDisplayName(String roomId, String userId, final int conversation_index) {
+    private void FetchMemberDisplayName(String roomId, String userId, final Conversation conversation) {
         String url = getString(R.string.origin) + "/api/room/memberDisplayName";
         HashMap<String, String> params = new HashMap<>();
         params.put("roomId", roomId);
@@ -125,7 +125,7 @@ public class ConversationsFragment extends Fragment {
                     @Override
                     public void onResponse(JSONObject response) {
                         try {
-                            conversations.get(conversation_index).setName(response.getString("displayName"));
+                            conversation.setName(response.getString("displayName"));
                             adapter.notifyDataSetChanged();
                             Log.i("Displayname", response.toString());
                         } catch (JSONException e) {

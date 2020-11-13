@@ -55,17 +55,17 @@ public class MessageActivity extends AppCompatActivity {
 
     private void Init() throws JSONException {
         // Set view
+        lvMain = findViewById(R.id.lvMain);
+        edtMessage = findViewById(R.id.edtMessage);
+        btnSend = findViewById(R.id.btnSend);
         toolbarTitle = findViewById(R.id.toolbarTitle);
         setSupportActionBar(toolbarTitle);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setDisplayShowHomeEnabled(true);
-        lvMain = findViewById(R.id.lvMain);
-        edtMessage = findViewById(R.id.edtMessage);
-        btnSend = findViewById(R.id.btnSend);
         // Set data
-        messages = new ArrayList<>();
         user = (User) getIntent().getSerializableExtra("User");
         room = (Room) getIntent().getSerializableExtra("Room");
+        messages = new ArrayList<>();
         adapter = new MessageAdapter(getApplicationContext(), R.layout.line_message, messages);
         FetchMessagesInRoom();
         //FetchRoomName();

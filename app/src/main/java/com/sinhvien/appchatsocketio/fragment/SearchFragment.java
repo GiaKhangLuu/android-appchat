@@ -153,7 +153,7 @@ public class SearchFragment extends Fragment {
                             } catch (JSONException e) {
                                 e.printStackTrace();
                             }
-                        } else {
+                        } else { // Case user and searchedUser haven't chatted yet
                             MoveToMessageActivity(null, searchedUserDisplayName);
                         }
                     }

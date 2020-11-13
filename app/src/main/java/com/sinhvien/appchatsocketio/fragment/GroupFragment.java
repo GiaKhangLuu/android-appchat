@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ImageButton;
@@ -22,6 +23,7 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonArrayRequest;
 import com.sinhvien.appchatsocketio.R;
 import com.sinhvien.appchatsocketio.activity.CreateGroupActivity;
+import com.sinhvien.appchatsocketio.activity.MessageActivity;
 import com.sinhvien.appchatsocketio.adapter.RoomAdapter;
 import com.sinhvien.appchatsocketio.helper.CustomJsonArrayRequest;
 import com.sinhvien.appchatsocketio.helper.VolleySingleton;
@@ -97,6 +99,13 @@ public class GroupFragment extends Fragment {
         }
     }
 
+    private void MoveToMessageActivity(Room room) {
+        Intent intent = new Intent(getContext(), MessageActivity.class);
+        intent.putExtra("User", user);
+        intent.putExtra("Room", room);
+        startActivity(intent);
+    }
+
     View.OnClickListener btnCreateOnClickListener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
@@ -106,11 +115,19 @@ public class GroupFragment extends Fragment {
         }
     };
 
+    AdapterView.OnItemClickListener onItemClickListener = new AdapterView.OnItemClickListener() {
+        @Override
+        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+            MoveToMessageActivity(adapter.getItem(position));
+        }
+    };
+
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         Init(view);
         btnCreateRoom.setOnClickListener(btnCreateOnClickListener);
+        lvRooms.setOnItemClickListener(onItemClickListener);
     }
 
 }
