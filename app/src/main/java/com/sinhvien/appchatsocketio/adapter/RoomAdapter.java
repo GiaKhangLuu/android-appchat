@@ -7,11 +7,14 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ImageButton;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.sinhvien.appchatsocketio.R;
+import com.sinhvien.appchatsocketio.activity.MainActivity;
+import com.sinhvien.appchatsocketio.fragment.GroupFragment;
 import com.sinhvien.appchatsocketio.model.Room;
 
 import org.w3c.dom.Text;
@@ -31,12 +34,20 @@ public class RoomAdapter extends ArrayAdapter<Room> {
         rooms = objects;
     }
 
-    private void Init(Room room, View view) {
+    private void Init(final Room room, View view) {
         TextView tvRoomName;
-        ImageButton imgBtnDelete;
+        ImageButton imgBtnLeave;
         tvRoomName = view.findViewById(R.id.tvRoomName);
-        imgBtnDelete = view.findViewById(R.id.imgBtnDelete);
+        imgBtnLeave = view.findViewById(R.id.imgBtnLeave);
         tvRoomName.setText(room.getName());
+        imgBtnLeave.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                GroupFragment fragment = ((GroupFragment) ((MainActivity) context).getSupportFragmentManager().
+                        findFragmentById(R.id.containerMain));
+                fragment.LeaveRoom(room);
+            }
+        });
     }
 
     @NonNull

@@ -2,6 +2,7 @@ package com.sinhvien.appchatsocketio.fragment;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -21,6 +22,7 @@ import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonArrayRequest;
+import com.android.volley.toolbox.JsonObjectRequest;
 import com.sinhvien.appchatsocketio.R;
 import com.sinhvien.appchatsocketio.activity.CreateGroupActivity;
 import com.sinhvien.appchatsocketio.activity.MessageActivity;
@@ -89,6 +91,7 @@ public class GroupFragment extends Fragment {
     }
 
     private void SetRooms(JSONArray jsonArray) throws JSONException {
+        rooms.clear();
         for(int i = 0; i < jsonArray.length(); i++) {
             JSONObject object = jsonArray.getJSONObject(i);
             Room room = new Room();
@@ -106,19 +109,44 @@ public class GroupFragment extends Fragment {
         startActivity(intent);
     }
 
+    AdapterView.OnItemClickListener onItemClickListener = new AdapterView.OnItemClickListener() {
+        @Override
+        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+            MoveToMessageActivity(adapter.getItem(position));
+        }
+    };
+
+    public void LeaveRoom(Room room) {
+        String url = getString(R.string.origin) + "/api/room/leaveRoom";
+        HashMap<String, String> params = new HashMap<>();
+        params.put("userId", user.getIdUser());
+        params.put("roomId", room.getIdRoom());
+        JsonObjectRequest request = new JsonObjectRequest(Request.Method.POST,
+                url,
+                new JSONObject(params),
+                new Response.Listener<JSONObject>() {
+                    @Override
+                    public void onResponse(JSONObject response) {
+                        Toast.makeText(getContext(), "Leave successfully", Toast.LENGTH_SHORT).show();
+                        FetchMultiMembersRoomsOfUser();
+                    }
+                },
+                new Response.ErrorListener() {
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        Log.i("Leave", error.toString());
+                    }
+                });
+        RequestQueue requestQueue = VolleySingleton.getInstance(getContext()).getRequestQueue();
+        requestQueue.add(request);
+    }
+
     View.OnClickListener btnCreateOnClickListener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
             Intent intent = new Intent(getContext(), CreateGroupActivity.class);
             intent.putExtra("User", user);
             startActivity(intent);
-        }
-    };
-
-    AdapterView.OnItemClickListener onItemClickListener = new AdapterView.OnItemClickListener() {
-        @Override
-        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-            MoveToMessageActivity(adapter.getItem(position));
         }
     };
 
