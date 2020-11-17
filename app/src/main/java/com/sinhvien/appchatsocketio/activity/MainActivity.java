@@ -38,12 +38,11 @@ import io.socket.client.Socket;
 public class MainActivity extends AppCompatActivity {
     private BottomNavigationView bottomNav;
     private User user;
-    private Handler handler;
     private Socket socket;
 
     private void Init(){
         bottomNav = findViewById(R.id.bottomNav);
-        handler = new Handler();
+        user = (User) getIntent().getSerializableExtra("User");
         socket = ChatHelper.getInstace(this).GetSocket();
         socket.connect();
     }
@@ -82,58 +81,12 @@ public class MainActivity extends AppCompatActivity {
         getSupportFragmentManager().beginTransaction().replace(R.id.containerMain, fragment).commit();
     }
 
-    private void SetUser(JSONObject obj)  {
-        String id;
-        String displayName;
-        try {
-            id = obj.getString("_id");
-            displayName = obj.getString("displayName");
-            user = new User(id, displayName);
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void FetchUserByUserId() {
-        String url = getString(R.string.origin) + "/api/user/getUser";
-        HashMap param = new HashMap();
-        param.put("userId", "5f83147bd27b95f9d16bc3e3");
-        JsonObjectRequest request = new JsonObjectRequest(Request.Method.POST,
-                url,
-                new JSONObject(param),
-                new Response.Listener<JSONObject>() {
-                    @Override
-                    public void onResponse(JSONObject response) {
-                        SetUser(response);
-                        bottomNav.setOnNavigationItemSelectedListener(navItemSelectedListener);
-                        LoadFragment(new ConversationsFragment());
-                        //Log.i("User", user.getDisplayName());
-                    }
-                },
-                new Response.ErrorListener() {
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
-                        Log.i("User", error.toString());
-                    }
-                });
-        RequestQueue requestQueue = VolleySingleton.getInstance(this).getRequestQueue();
-        requestQueue.add(request);
-    }
-
-    /*private Runnable waitToFetchUser = new Runnable() {
-        @Override
-        public void run() {
-            bottomNav.setOnNavigationItemSelectedListener(navItemSelectedListener);
-            LoadFragment(new ConversationsFragment(user));
-        }
-    };*/
-
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Init();
-        FetchUserByUserId();
-        //handler.postDelayed(waitToFetchUser, 1000);
+        bottomNav.setOnNavigationItemSelectedListener(navItemSelectedListener);
+        LoadFragment(new ConversationsFragment());
     }
 }

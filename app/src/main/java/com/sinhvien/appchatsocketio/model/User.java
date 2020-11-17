@@ -5,12 +5,30 @@ import java.io.Serializable;
 public class User implements Serializable {
     private String idUser;
     private String displayName;
+    private String accountName;
+    private String password;
 
     public User() {}
 
     public User(String idUser, String displayName) {
         this.idUser = idUser;
         this.displayName = displayName;
+    }
+
+    public String getAccountName() {
+        return accountName;
+    }
+
+    public void setAccountName(String accountName) {
+        this.accountName = accountName;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
     }
 
     public String getIdUser() {
