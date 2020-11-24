@@ -44,8 +44,14 @@ public class MainActivity extends AppCompatActivity {
         bottomNav = findViewById(R.id.bottomNav);
         user = (User) getIntent().getSerializableExtra("User");
         socket = ChatHelper.getInstace(this).GetSocket();
-        socket.connect();
+        SetUpSocket();
     }
+
+    private void SetUpSocket() {
+        socket.connect();
+        socket.emit("setUpSocket", user.getIdUser());
+    }
+
 
     private BottomNavigationView.OnNavigationItemSelectedListener navItemSelectedListener =
             new BottomNavigationView.OnNavigationItemSelectedListener() {

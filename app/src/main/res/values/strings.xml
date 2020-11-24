@@ -17,5 +17,5 @@
     <string name="done">DONE</string>
     <string name="next">NEXT</string>
     <string name="send_message">Send Message</string>
-    <string name="origin">http://10.255.169.0:3000</string>
+    <string name="origin">http://192.168.0.100:3000</string>
 </resources>

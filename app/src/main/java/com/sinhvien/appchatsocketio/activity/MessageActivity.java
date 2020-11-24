@@ -25,6 +25,7 @@ import com.android.volley.toolbox.JsonArrayRequest;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.sinhvien.appchatsocketio.R;
 import com.sinhvien.appchatsocketio.adapter.MessageAdapter;
+import com.sinhvien.appchatsocketio.helper.ChatHelper;
 import com.sinhvien.appchatsocketio.helper.CustomJsonArrayRequest;
 import com.sinhvien.appchatsocketio.helper.VolleySingleton;
 import com.sinhvien.appchatsocketio.model.Conversation;
@@ -39,7 +40,12 @@ import org.json.JSONObject;
 import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
+
+import io.socket.client.Socket;
+import io.socket.emitter.Emitter;
 
 public class MessageActivity extends AppCompatActivity {
     // View
@@ -52,56 +58,50 @@ public class MessageActivity extends AppCompatActivity {
     private User user;
     private ArrayList<Message> messages;
     private ArrayAdapter<Message> adapter;
+    private Socket socket;
 
-    private void Init() throws JSONException {
-        // Set view
+    private void Init(){
+        Mapping();
+        SetData();
+        SetActionBar();
+        CheckSocketStatus();
+    }
+
+    private void Mapping() {
         lvMain = findViewById(R.id.lvMain);
         edtMessage = findViewById(R.id.edtMessage);
         btnSend = findViewById(R.id.btnSend);
         toolbarTitle = findViewById(R.id.toolbarTitle);
+    }
+
+    private void SetActionBar() {
         setSupportActionBar(toolbarTitle);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setDisplayShowHomeEnabled(true);
-        // Set data
+        getSupportActionBar().setTitle(room.getName());
+    }
+
+    private void SetData() {
+        socket = ChatHelper.getInstace(this).GetSocket();
         user = (User) getIntent().getSerializableExtra("User");
         room = (Room) getIntent().getSerializableExtra("Room");
         messages = new ArrayList<>();
         adapter = new MessageAdapter(getApplicationContext(), R.layout.line_message, messages);
-        FetchMessagesInRoom();
-        //FetchRoomName();
         lvMain.setAdapter(adapter);
-        getSupportActionBar().setTitle(room.getName());
     }
 
-    /*private void FetchRoomName() throws JSONException {
-        JSONObject param = new JSONObject();
-        param.put("roomId", roomId);
-        String url = getString(R.string.origin) + "/getRoomName";
-        JsonObjectRequest request = new JsonObjectRequest(Request.Method.POST,
-                url,
-                param,
-                new Response.Listener<JSONObject>() {
-                    @Override
-                    public void onResponse(JSONObject response) {
-                        try {
-                            toolbarTitle.setTitle(response.getString("name"));
-                        } catch (JSONException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                },
-                new Response.ErrorListener() {
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
-                        Log.i("Error", error.toString());
-                    }
-                }
-        );
-        RequestQueue requestQueue = VolleySingleton.getInstance(this).getRequestQueue();
-        requestQueue.add(request);
-    }*/
+    private void CheckSocketStatus() {
+        if(!socket.connected()) {
+            SetUpSocket();
+        }
+    }
 
-    private void SetMessages(JSONArray jsonArray) {
+    private void SetUpSocket() {
+        socket.connect();
+        socket.emit("setUpSocket", user.getIdUser());
+    }
+
+    private void RenderMessage(JSONArray jsonArray) {
         for(int i = 0; i < jsonArray.length(); i++) {
             try {
                 JSONObject object = jsonArray.getJSONObject(i);
@@ -128,7 +128,7 @@ public class MessageActivity extends AppCompatActivity {
                     @Override
                     public void onResponse(JSONArray response) {
                         Log.i("Messages", response.toString());
-                        SetMessages(response);
+                        RenderMessage(response);
                         adapter.notifyDataSetChanged();
                     }
                 },
@@ -150,15 +150,58 @@ public class MessageActivity extends AppCompatActivity {
         }
     };
 
+    private void SendMessage() {
+        String senderId = user.getIdUser();
+        String roomId = room.getIdRoom();
+        String content = edtMessage.getText().toString();
+        Date time = Calendar.getInstance().getTime();
+        JSONObject object = SetObject(senderId, roomId, content, time);
+        CheckSocketStatus();
+        socket.emit("user_send_message", object);
+        edtMessage.setText("");
+    }
+
+    private JSONObject SetObject(String senderId, String roomId, String content, Date time) {
+        HashMap hashMap = new HashMap();
+        hashMap.put("senderId", senderId);
+        hashMap.put("roomId", roomId);
+        hashMap.put("content", content);
+        hashMap.put("time", time);
+        JSONObject obj = new JSONObject(hashMap);
+        return obj;
+    }
+
+    private Emitter.Listener OnNewMessage = new Emitter.Listener() {
+        @Override
+        public void call(final Object... args) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    JSONObject data = (JSONObject) args[0];
+                    try {
+                        Log.i("newmessage", data.toString());
+                        Toast.makeText(MessageActivity.this, data.getString("content"), Toast.LENGTH_SHORT).show();
+                    } catch (Exception ex) {
+                        Log.i("newmessage", ex.toString());
+                    }
+                }
+            });
+        }
+    };
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_send_message);
-        try {
-            Init();
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
+        Init();
+        FetchMessagesInRoom();
         toolbarTitle.setNavigationOnClickListener(toolBarOnClickListener);
+        btnSend.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                SendMessage();
+            }
+        });
+        socket.on("new_message", OnNewMessage);
     }
 }

@@ -113,6 +113,7 @@ public class ConversationsFragment extends Fragment {
         }
     }
 
+    // In case single rooms, must fetch partner display name to set name of the conversation
     private void FetchMemberDisplayName(String roomId, String userId, final Conversation conversation) {
         String url = getString(R.string.origin) + "/api/room/memberDisplayName";
         HashMap<String, String> params = new HashMap<>();
