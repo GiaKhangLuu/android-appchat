@@ -1,54 +1,71 @@
 package com.sinhvien.appchatsocketio.adapter;
 
 import android.content.Context;
-import android.speech.tts.TextToSpeech;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
-import android.widget.EditText;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.sinhvien.appchatsocketio.R;
 import com.sinhvien.appchatsocketio.model.Message;
 
-import org.w3c.dom.Text;
-
 import java.util.ArrayList;
-import java.util.List;
 
-public class MessageAdapter extends ArrayAdapter<Message> {
+public class MessageAdapter extends
+        RecyclerView.Adapter<MessageAdapter.ViewHolder> {
+    public static final int MSG_TYPE_LEFT = 0;
+    public static final int MSG_TYPE_RIGHT = 1;
     private Context context;
-    private int layout;
     private ArrayList<Message> messages;
+    private String userId;
 
-    public MessageAdapter(@NonNull Context context, int resource, @NonNull ArrayList<Message> objects) {
-        super(context, resource, objects);
+    public MessageAdapter(Context context, ArrayList<Message> messages, String userId) {
         this.context = context;
-        layout = resource;
-        messages = objects;
-    }
-
-    private void SetView(Message mess, View view) {
-        TextView tvMessage, tvDisplayName;
-        tvMessage = view.findViewById(R.id.tvMessage);
-        tvDisplayName = view.findViewById(R.id.tvDisplayName);
-        tvMessage.setText(mess.getMessage());
-        tvDisplayName.setText(mess.getDisplayName());
+        this.messages = messages;
+        this.userId = userId;
     }
 
     @NonNull
     @Override
-    public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
-        LayoutInflater layoutInflater = LayoutInflater.from(context);
-        convertView = layoutInflater.inflate(layout, parent, false);
-        Message message = messages.get(position);
-        SetView(message, convertView);
-        return convertView;
+    public MessageAdapter.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        if(viewType == MSG_TYPE_LEFT) {
+            View view = LayoutInflater.from(context).inflate(R.layout.item_message_left, parent, false);
+            return new ViewHolder(view);
+        }
+        View view = LayoutInflater.from(context).inflate(R.layout.item_message_right, parent, false);
+        return new ViewHolder(view);
     }
 
+    @Override
+    public void onBindViewHolder(@NonNull MessageAdapter.ViewHolder holder, int position) {
+        Message mess = messages.get(position);
+        if(holder.tvDisplayName != null) {
+            holder.tvDisplayName.setText(mess.getDisplayName());
+        }
+        holder.tvMessage.setText(mess.getMessage());
+    }
 
+    @Override
+    public int getItemCount() {
+        return messages.size();
+    }
+
+    @Override
+    public int getItemViewType(int position) {
+        if(messages.get(position).getSenderId().equals(userId)) return MSG_TYPE_RIGHT;
+        return MSG_TYPE_LEFT;
+    }
+
+    public class ViewHolder extends RecyclerView.ViewHolder {
+        private TextView tvDisplayName;
+        private TextView tvMessage;
+        public ViewHolder(@NonNull View itemView) {
+            super(itemView);
+            tvDisplayName = itemView.findViewById(R.id.tvDisplayName);
+            tvMessage = itemView.findViewById(R.id.tvMessage);
+        }
+    }
 }
