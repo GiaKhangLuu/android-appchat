@@ -1,7 +1,11 @@
 package com.sinhvien.appchatsocketio.fragment;
 
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Canvas;
+import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
@@ -15,7 +19,11 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.DividerItemDecoration;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -41,10 +49,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 public class ConversationsFragment extends Fragment {
-    private ListView lvMain;
+    private RecyclerView rvConversation;
     private User user;
     private ArrayList<Conversation> conversations;
-    private ArrayAdapter<Conversation>  adapter;
+    private ConversationAdapter adapter;
 
     @Nullable
     @Override
@@ -52,18 +60,46 @@ public class ConversationsFragment extends Fragment {
         return inflater.inflate(R.layout.fragment_messages, container, false);
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+    private void SetRecyclerView() {
+        LinearLayoutManager layoutManager = new LinearLayoutManager(getContext());
+        rvConversation.setHasFixedSize(true); // Improve performance of rv when scrolling
+        rvConversation.setLayoutManager(layoutManager);
+        // Set divider for recycler view
+        rvConversation.addItemDecoration(new RecyclerView.ItemDecoration() {
+            @Override
+            public void onDrawOver(@NonNull Canvas c, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
+                super.onDraw(c, parent, state);
+                Drawable divider = getContext().getDrawable(R.drawable.divider);
+                int left = parent.getPaddingLeft();
+                int right = parent.getWidth() - parent.getPaddingRight();
+                int childCount = parent.getChildCount();
+                for (int i = 0; i < childCount; i++) {
+                    View child = parent.getChildAt(i);
+                    RecyclerView.LayoutParams params = (RecyclerView.LayoutParams) child.getLayoutParams();
+                    int top = child.getBottom() + params.bottomMargin;
+                    int bottom = top + divider.getIntrinsicHeight();
+                    divider.setBounds(left, top, right, bottom);
+                    divider.draw(c);
+                }
+            }
+        });
+        rvConversation.setAdapter(adapter);
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     private void Init(View view) {
-        lvMain = view.findViewById(R.id.lvMessages);
+        rvConversation = view.findViewById(R.id.rvConversations);
         conversations = new ArrayList<>();
-        adapter = new ConversationAdapter(getContext(), R.layout.item_conversation, conversations);
-        lvMain.setAdapter(adapter);
-        lvMain.setVisibility(View.INVISIBLE);
+        adapter = new ConversationAdapter(getContext(), conversations, user);
+        rvConversation.setVisibility(View.INVISIBLE);
+        SetRecyclerView();
         FetchConversations();
         // Wait to load all conversation
         new Handler().postDelayed(new Runnable() {
             @Override
             public void run() {
-                lvMain.setVisibility(View.VISIBLE);
+                rvConversation.setVisibility(View.VISIBLE);
             }
         }, 300);
     }
@@ -97,7 +133,6 @@ public class ConversationsFragment extends Fragment {
             try {
                 JSONObject obj = arr.getJSONObject(i);
                 Conversation cv = new Conversation();
-                conversations.add(cv);
                 cv.setRoomId(obj.getString("roomId"));
                 // If roomName = "" => set roomName = displayName of your friend
                 if(obj.getString("name").isEmpty()) {
@@ -107,6 +142,7 @@ public class ConversationsFragment extends Fragment {
                 }
                 cv.setMessage(obj.getString("content"));
                 cv.setTime(obj.getString("time"));
+                conversations.add(cv);
             } catch (JSONException e) {
                 e.printStackTrace();
             }
@@ -144,7 +180,7 @@ public class ConversationsFragment extends Fragment {
         requestQueue.add(request);
     }
 
-    AdapterView.OnItemClickListener onItemClickListener = new AdapterView.OnItemClickListener() {
+    /*AdapterView.OnItemClickListener onItemClickListener = new AdapterView.OnItemClickListener() {
         @Override
         public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
             Conversation conversation = adapter.getItem(position);
@@ -156,13 +192,13 @@ public class ConversationsFragment extends Fragment {
             intent.putExtra("Room", room);
             startActivity(intent);
         }
-    };
+    };*/
 
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         user = (User) getArguments().getSerializable("User");
         Init(view);
-        lvMain.setOnItemClickListener(onItemClickListener);
     }
 }
