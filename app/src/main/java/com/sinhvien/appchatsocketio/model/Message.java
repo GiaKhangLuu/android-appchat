@@ -8,6 +8,13 @@ public class Message implements Serializable {
     public Message() {
     }
 
+    public Message(String senderId, String displayName, String message, String time) {
+        this.senderId = senderId;
+        this.displayName = displayName;
+        this.message = message;
+        this.time = time;
+    }
+
     public Message(String displayName, String message, String time) {
         this.displayName = displayName;
         this.message = message;

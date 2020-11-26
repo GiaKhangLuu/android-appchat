@@ -30,6 +30,7 @@ import com.sinhvien.appchatsocketio.model.Room;
 import com.sinhvien.appchatsocketio.model.User;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
@@ -80,12 +81,16 @@ public class MessageActivity extends AppCompatActivity {
         room = (Room) getIntent().getSerializableExtra("Room");
         messages = new ArrayList<>();
         adapter = new MessageAdapter(this, messages, user.getIdUser());
-        rvMessage.setLayoutManager(new LinearLayoutManager(this));
+        LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
+        linearLayoutManager.setStackFromEnd(true); // Set the rv focus on last ele of list
+        rvMessage.setHasFixedSize(true); // Improve performance of rv
+        rvMessage.setLayoutManager(linearLayoutManager);
         rvMessage.setAdapter(adapter);
     }
 
     private void CheckSocketStatus() {
         if(!socket.connected()) {
+            Toast.makeText(this, "Connecting", Toast.LENGTH_SHORT).show();
             SetUpSocket();
         }
     }
@@ -145,17 +150,19 @@ public class MessageActivity extends AppCompatActivity {
     };
 
     private void SendMessage() {
-        String senderId = user.getIdUser();
-        String roomId = room.getIdRoom();
         String content = edtMessage.getText().toString();
-        Date time = Calendar.getInstance().getTime();
-        JSONObject object = SetObject(senderId, roomId, content, time);
-        CheckSocketStatus();
-        socket.emit("user_send_message", object);
-        edtMessage.setText("");
+        if(!content.trim().isEmpty()) {
+            String senderId = user.getIdUser();
+            String roomId = room.getIdRoom();
+            Date time = Calendar.getInstance().getTime();
+            JSONObject object = SetData(senderId, roomId, content, time);
+            CheckSocketStatus();
+            socket.emit("user_send_message", object);
+            edtMessage.setText("");
+        }
     }
 
-    private JSONObject SetObject(String senderId, String roomId, String content, Date time) {
+    private JSONObject SetData(String senderId, String roomId, String content, Date time) {
         HashMap hashMap = new HashMap();
         hashMap.put("senderId", senderId);
         hashMap.put("roomId", roomId);
@@ -174,7 +181,7 @@ public class MessageActivity extends AppCompatActivity {
                     JSONObject data = (JSONObject) args[0];
                     try {
                         Log.i("newmessage", data.toString());
-                        Toast.makeText(MessageActivity.this, data.getString("content"), Toast.LENGTH_SHORT).show();
+                        AppendNewMessage(data);
                     } catch (Exception ex) {
                         Log.i("newmessage", ex.toString());
                     }
@@ -182,6 +189,20 @@ public class MessageActivity extends AppCompatActivity {
             });
         }
     };
+
+    private void AppendNewMessage(JSONObject data) {
+        try {
+            String content = data.getString("content");
+            String displayName = data.getString("displayName");
+            String senderId = data.getString("senderId");
+            String time = data.getString("time");
+            messages.add(new Message(senderId, displayName, content, time));
+            adapter.notifyItemInserted(messages.size());
+            rvMessage.smoothScrollToPosition(messages.size()); // Update rv focus on last item
+        } catch (JSONException ex) {
+            Log.i("New message", ex.getMessage());
+        }
+    }
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
