@@ -14,6 +14,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.ListView;
 import android.widget.Toast;
 
@@ -33,6 +34,7 @@ import com.android.volley.toolbox.JsonObjectRequest;
 import com.sinhvien.appchatsocketio.R;
 import com.sinhvien.appchatsocketio.activity.MessageActivity;
 import com.sinhvien.appchatsocketio.adapter.ConversationAdapter;
+import com.sinhvien.appchatsocketio.helper.ChatHelper;
 import com.sinhvien.appchatsocketio.helper.CustomJsonArrayRequest;
 import com.sinhvien.appchatsocketio.helper.VolleySingleton;
 import com.sinhvien.appchatsocketio.model.Conversation;
@@ -48,11 +50,15 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import io.socket.client.Socket;
+import io.socket.emitter.Emitter;
+
 public class ConversationsFragment extends Fragment {
     private RecyclerView rvConversation;
     private User user;
     private ArrayList<Conversation> conversations;
     private ConversationAdapter adapter;
+    private Socket socket;
 
     @Nullable
     @Override
@@ -66,6 +72,12 @@ public class ConversationsFragment extends Fragment {
         rvConversation.setHasFixedSize(true); // Improve performance of rv when scrolling
         rvConversation.setLayoutManager(layoutManager);
         // Set divider for recycler view
+        rvConversation.addItemDecoration(new RecyclerView.ItemDecoration() {
+            @Override
+            public void onDraw(@NonNull Canvas c, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
+                super.onDraw(c, parent, state);
+            }
+        });
         rvConversation.addItemDecoration(new RecyclerView.ItemDecoration() {
             @Override
             public void onDrawOver(@NonNull Canvas c, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
@@ -89,19 +101,13 @@ public class ConversationsFragment extends Fragment {
 
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     private void Init(View view) {
+        socket = ChatHelper.getInstace(getContext()).GetSocket();
         rvConversation = view.findViewById(R.id.rvConversations);
         conversations = new ArrayList<>();
         adapter = new ConversationAdapter(getContext(), conversations, user);
-        rvConversation.setVisibility(View.INVISIBLE);
+        CheckSocketStatus();
         SetRecyclerView();
         FetchConversations();
-        // Wait to load all conversation
-        new Handler().postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                rvConversation.setVisibility(View.VISIBLE);
-            }
-        }, 300);
     }
 
     private void FetchConversations() {
@@ -116,7 +122,6 @@ public class ConversationsFragment extends Fragment {
                     public void onResponse(JSONArray response) {
                         Log.i("Conversation", response.toString());
                         SetConversations(response);
-                        adapter.notifyDataSetChanged();
                     }
                 },
                 new Response.ErrorListener() {
@@ -133,6 +138,7 @@ public class ConversationsFragment extends Fragment {
             try {
                 JSONObject obj = arr.getJSONObject(i);
                 Conversation cv = new Conversation();
+                conversations.add(cv);
                 cv.setRoomId(obj.getString("roomId"));
                 // If roomName = "" => set roomName = displayName of your friend
                 if(obj.getString("name").isEmpty()) {
@@ -142,7 +148,7 @@ public class ConversationsFragment extends Fragment {
                 }
                 cv.setMessage(obj.getString("content"));
                 cv.setTime(obj.getString("time"));
-                conversations.add(cv);
+                adapter.notifyDataSetChanged();
             } catch (JSONException e) {
                 e.printStackTrace();
             }
@@ -163,7 +169,7 @@ public class ConversationsFragment extends Fragment {
                     public void onResponse(JSONObject response) {
                         try {
                             conversation.setName(response.getString("displayName"));
-                            adapter.notifyDataSetChanged();
+                            adapter.notifyItemChanged(conversations.indexOf(conversation));
                             Log.i("Displayname", response.toString());
                         } catch (JSONException e) {
                             e.printStackTrace();
@@ -180,19 +186,67 @@ public class ConversationsFragment extends Fragment {
         requestQueue.add(request);
     }
 
-    /*AdapterView.OnItemClickListener onItemClickListener = new AdapterView.OnItemClickListener() {
-        @Override
-        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-            Conversation conversation = adapter.getItem(position);
-            Room room = new Room();
-            room.setName(conversation.getName());
-            room.setIdRoom(conversation.getRoomId());
-            Intent intent = new Intent(getContext(), MessageActivity.class);
-            intent.putExtra("User", user);
-            intent.putExtra("Room", room);
-            startActivity(intent);
+    private void CheckSocketStatus() {
+        if(!socket.connected()) {
+            Toast.makeText(getContext(), "Connecting", Toast.LENGTH_SHORT).show();
+            SetUpSocket();
+        } else {
+            Toast.makeText(getContext(), "Connected", Toast.LENGTH_SHORT).show();
         }
-    };*/
+    }
+
+    private void SetUpSocket() {
+        socket.connect();
+        socket.emit("setUpSocket", user.getIdUser());
+    }
+
+    private Emitter.Listener OnUpdateConversation = new Emitter.Listener() {
+        @Override
+        public void call(final Object... args) {
+            getActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    JSONObject data = (JSONObject) args[0];
+                    RemoveConversation(data);
+                    InsertNewConversation(data);
+                }
+            });
+        }
+    };
+
+    private void RemoveConversation(JSONObject data) {
+        try {
+            String convId = data.getString("roomId");
+            for(int i = 0; i < conversations.size(); i++) {
+                if(conversations.get(i).getRoomId().equals(convId)) {
+                    conversations.remove(i);
+                    adapter.notifyItemRemoved(i);
+                    break;
+                }
+            }
+        } catch(JSONException ex) {
+
+        }
+    }
+
+    private void InsertNewConversation(JSONObject data) {
+        try {
+            Conversation cv = new Conversation();
+            conversations.add(0, cv);
+            cv.setRoomId(data.getString("roomId"));
+            // If roomName = "" => set roomName = displayName of your friend
+            if(data.getString("name").isEmpty()) {
+                FetchMemberDisplayName(cv.getRoomId(), user.getIdUser(), cv);
+            } else {
+                cv.setName(data.getString("name"));
+            }
+            cv.setMessage(data.getString("content"));
+            cv.setTime(data.getString("time"));
+            adapter.notifyItemInserted(0);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
 
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     @Override
@@ -200,5 +254,6 @@ public class ConversationsFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
         user = (User) getArguments().getSerializable("User");
         Init(view);
+        socket.on("update_conversation", OnUpdateConversation);
     }
 }
