@@ -192,16 +192,24 @@ public class MessageActivity extends AppCompatActivity {
 
     private void AppendNewMessage(JSONObject data) {
         try {
+            String roomId = data.getString("roomId");
             String content = data.getString("content");
             String displayName = data.getString("displayName");
             String senderId = data.getString("senderId");
             String time = data.getString("time");
-            messages.add(new Message(senderId, displayName, content, time));
-            adapter.notifyItemInserted(messages.size());
-            rvMessage.smoothScrollToPosition(messages.size()); // Update rv focus on last item
+            if(IsSameRoom(roomId)) {
+                messages.add(new Message(senderId, displayName, content, time));
+                adapter.notifyItemInserted(messages.size());
+                rvMessage.smoothScrollToPosition(messages.size()); // Update rv focus on last item
+            }
         } catch (JSONException ex) {
             Log.i("New message", ex.getMessage());
         }
+    }
+
+    private boolean IsSameRoom(String idRoomOfMsg) {
+        if(room.getIdRoom().equals(idRoomOfMsg)) return true;
+        return false;
     }
 
     @Override

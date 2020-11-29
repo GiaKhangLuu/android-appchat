@@ -206,9 +206,13 @@ public class ConversationsFragment extends Fragment {
             getActivity().runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    JSONObject data = (JSONObject) args[0];
-                    RemoveConversation(data);
-                    InsertNewConversation(data);
+                    try {
+                        JSONObject data = (JSONObject) args[0];
+                        RemoveConversation(data);
+                        InsertNewConversation(data);
+                    } catch (Exception ex) {
+                        Toast.makeText(getContext(), "Error", Toast.LENGTH_SHORT).show();
+                    }
                 }
             });
         }
