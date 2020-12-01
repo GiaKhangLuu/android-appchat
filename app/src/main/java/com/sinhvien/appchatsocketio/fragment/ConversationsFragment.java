@@ -74,12 +74,6 @@ public class ConversationsFragment extends Fragment {
         // Set divider for recycler view
         rvConversation.addItemDecoration(new RecyclerView.ItemDecoration() {
             @Override
-            public void onDraw(@NonNull Canvas c, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
-                super.onDraw(c, parent, state);
-            }
-        });
-        rvConversation.addItemDecoration(new RecyclerView.ItemDecoration() {
-            @Override
             public void onDrawOver(@NonNull Canvas c, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
                 super.onDraw(c, parent, state);
                 Drawable divider = getContext().getDrawable(R.drawable.divider);
@@ -203,18 +197,20 @@ public class ConversationsFragment extends Fragment {
     private Emitter.Listener OnUpdateConversation = new Emitter.Listener() {
         @Override
         public void call(final Object... args) {
-            getActivity().runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        JSONObject data = (JSONObject) args[0];
-                        RemoveConversation(data);
-                        InsertNewConversation(data);
-                    } catch (Exception ex) {
-                        Toast.makeText(getContext(), "Error", Toast.LENGTH_SHORT).show();
+            if(getActivity() != null) {
+                getActivity().runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            JSONObject data = (JSONObject) args[0];
+                            RemoveConversation(data);
+                            InsertNewConversation(data);
+                        } catch (Exception ex) {
+                            Toast.makeText(getContext(), "Error", Toast.LENGTH_SHORT).show();
+                        }
                     }
-                }
-            });
+                });
+            }
         }
     };
 
