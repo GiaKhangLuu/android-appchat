@@ -20,6 +20,8 @@ import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.StringRequest;
 import com.sinhvien.appchatsocketio.R;
 import com.sinhvien.appchatsocketio.adapter.MessageAdapter;
 import com.sinhvien.appchatsocketio.helper.ChatHelper;
@@ -51,6 +53,8 @@ public class MessageActivity extends AppCompatActivity {
     private Room room;
     private User user;
     private ArrayList<Message> messages;
+    // searchedUserId is used to create single if the user and searched user havent chatted yet
+    private String searchedUserId;
     private MessageAdapter adapter;
     private Socket socket;
 
@@ -79,6 +83,7 @@ public class MessageActivity extends AppCompatActivity {
         socket = ChatHelper.getInstace(this).GetSocket();
         user = (User) getIntent().getSerializableExtra("User");
         room = (Room) getIntent().getSerializableExtra("Room");
+        searchedUserId = getIntent().getStringExtra("IdChosenUser");
         messages = new ArrayList<>();
         adapter = new MessageAdapter(this, messages, user.getIdUser());
         LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
@@ -152,14 +157,67 @@ public class MessageActivity extends AppCompatActivity {
     private void SendMessage() {
         String content = edtMessage.getText().toString();
         if(!content.trim().isEmpty()) {
+            CheckSocketStatus();
             String senderId = user.getIdUser();
             String roomId = room.getIdRoom();
             Date time = Calendar.getInstance().getTime();
             JSONObject object = SetData(senderId, roomId, content, time);
-            CheckSocketStatus();
-            socket.emit("user_send_message", object);
-            edtMessage.setText("");
+            // Occure when user and searched user havent chatted yet => create room
+            if(room.getIdRoom() == null && searchedUserId != null)  {
+                CreateRoomThenSendMessage(object);
+            }
+            // Occure when user and searched have chatted or this is multiple members room
+            else {
+                socket.emit("user_send_message", object);
+                edtMessage.setText("");
+            }
         }
+    }
+
+    private void EmitJoinNewRoom(String[] members, String roomId) {
+        HashMap hashMap = new HashMap();
+        hashMap.put("members", members);
+        hashMap.put("roomId", roomId);
+        JSONObject object = new JSONObject(hashMap);
+        socket.emit("create_new_room", object);
+    }
+
+    private void CreateRoomThenSendMessage(final JSONObject data) {
+        String url = getString(R.string.origin) + "/api/room/createRoom";
+        final String[] members = new String[] { user.getIdUser(), searchedUserId };
+        HashMap hashMap = new HashMap();
+        hashMap.put("name", "");
+        hashMap.put("members", members);
+        JSONObject jsonObject = new JSONObject(hashMap);
+        JsonObjectRequest request = new JsonObjectRequest(
+                Request.Method.POST,
+                url,
+                jsonObject,
+                new Response.Listener<JSONObject>() {
+                    @Override
+                    public void onResponse(JSONObject response) {
+                        try {
+                            // Set roomId
+                            room.setIdRoom(response.getString("_id"));
+                            searchedUserId = null;
+                            EmitJoinNewRoom(members, room.getIdRoom());
+                            data.put("roomId", room.getIdRoom());
+                            socket.emit("user_send_message", data);
+                            edtMessage.setText("");
+                        } catch (Exception ex) {
+                            Log.i("exception", ex.toString());
+                        }
+                    }
+                },
+                new Response.ErrorListener() {
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        Log.i("exception", error.toString());
+                    }
+                }
+        );
+        RequestQueue requestQueue = VolleySingleton.getInstance(this).getRequestQueue();
+        requestQueue.add(request);
     }
 
     private JSONObject SetData(String senderId, String roomId, String content, Date time) {
