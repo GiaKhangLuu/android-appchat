@@ -2,34 +2,29 @@ package com.sinhvien.appchatsocketio.fragment;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.MessageQueue;
-import android.text.method.SingleLineTransformationMethod;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
-import android.widget.ListView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.SearchView;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
-import com.android.volley.toolbox.JsonArrayRequest;
-import com.android.volley.toolbox.JsonObjectRequest;
 import com.sinhvien.appchatsocketio.R;
 import com.sinhvien.appchatsocketio.activity.MessageActivity;
-import com.sinhvien.appchatsocketio.adapter.SearchUserToChatAdapter;
+import com.sinhvien.appchatsocketio.adapter.SearchedUserToChatAdapter;
 import com.sinhvien.appchatsocketio.helper.ChatHelper;
 import com.sinhvien.appchatsocketio.helper.CustomJsonArrayRequest;
 import com.sinhvien.appchatsocketio.helper.VolleySingleton;
-import com.sinhvien.appchatsocketio.model.Conversation;
 import com.sinhvien.appchatsocketio.model.Room;
 import com.sinhvien.appchatsocketio.model.User;
 
@@ -37,36 +32,48 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.lang.reflect.Method;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import io.socket.client.IO;
 import io.socket.client.Socket;
 
 public class SearchFragment extends Fragment {
-    private SearchView searchView;
-    private ListView lvShowUser;
     private ArrayList<User> searchedUsers;
     private User user;
-    private ArrayAdapter adapter;
+    private SearchView searchView;
+    private SearchedUserToChatAdapter searchedUserAdapter;
+    private RecyclerView rvSearchedUser;
     private Socket socket;
 
+    private void SetRecyclerView() {
+        rvSearchedUser.setHasFixedSize(true);
+        rvSearchedUser.setLayoutManager(new LinearLayoutManager(getContext()));
+        rvSearchedUser.setAdapter(searchedUserAdapter);
+    }
+
     private void Init(View view) {
+        socket = ChatHelper.getInstace(getContext()).GetSocket();
         searchView = view.findViewById(R.id.searchView);
-        lvShowUser = view.findViewById(R.id.lvShowUser);
+        rvSearchedUser = view.findViewById(R.id.rvSearchedUser);
         user = (User) getArguments().getSerializable("User");
         searchedUsers = new ArrayList<>();
-        adapter = new SearchUserToChatAdapter(getContext(), R.layout.row_search_user_to_chat, searchedUsers);
-        lvShowUser.setAdapter(adapter);
-        socket = ChatHelper.getInstace(getContext()).GetSocket();
-        if(socket.connected()) {
-            Toast.makeText(getContext(), "connected", Toast.LENGTH_SHORT).show();
+        searchedUserAdapter = new SearchedUserToChatAdapter(getContext(), user, searchedUsers);
+        CheckSocketStatus();
+        SetRecyclerView();
+    }
+
+    private void CheckSocketStatus() {
+        if(!socket.connected()) {
+            Toast.makeText(getContext(), "Connecting", Toast.LENGTH_SHORT).show();
+            SetUpSocket();
         } else {
-            Toast.makeText(getContext(), "disconnected", Toast.LENGTH_SHORT).show();
-            socket.connect();
+            Toast.makeText(getContext(), "Connected", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    private void SetUpSocket() {
+        socket.connect();
+        socket.emit("setUpSocket", user.getIdUser());
     }
 
     private void FetchUsersByUserDisplayName(String displayName) {
@@ -99,13 +106,15 @@ public class SearchFragment extends Fragment {
             for(int i = 0; i < jsonArray.length(); i++) {
                 JSONObject object = jsonArray.getJSONObject(i);
                 String userId = object.getString("_id");
-                String displayName = object.getString("displayName");
-                searchedUsers.add(new User(userId, displayName));
+                if(!userId.equals(user.getIdUser())) {
+                    String displayName = object.getString("displayName");
+                    searchedUsers.add(new User(userId, displayName));
+                }
             }
         } catch (JSONException ex) {
             ex.printStackTrace();
         }
-        adapter.notifyDataSetChanged();
+        searchedUserAdapter.notifyDataSetChanged();
     }
 
     SearchView.OnQueryTextListener onQueryTextListener = new SearchView.OnQueryTextListener() {
@@ -118,55 +127,11 @@ public class SearchFragment extends Fragment {
         public boolean onQueryTextChange(String newText) {
             if(newText.isEmpty()) {
                 searchedUsers.clear();
-                adapter.notifyDataSetChanged();
+                searchedUserAdapter.notifyDataSetChanged();
             }
             return false;
         }
     };
-
-    private void MoveToMessageActivity(String roomId, String searchedUserDisplayName) {
-        Room room = new Room();
-        room.setIdRoom(roomId);
-        room.setName(searchedUserDisplayName);
-        Intent intent = new Intent(getContext(), MessageActivity.class);
-        intent.putExtra("User", user);
-        intent.putExtra("Room", room);
-        startActivity(intent);
-    }
-
-    public void FetchSingleChat(final String searchedUserId, final String searchedUserDisplayName) {
-        String url = getString(R.string.origin) + "/api/room/singleChat";
-        HashMap<String, String> params = new HashMap<>();
-        params.put("userId", user.getIdUser());
-        params.put("searchedUserId", searchedUserId);
-        CustomJsonArrayRequest request = new CustomJsonArrayRequest(Request.Method.POST,
-                url,
-                new JSONObject(params),
-                new Response.Listener<JSONArray>() {
-                    @Override
-                    public void onResponse(JSONArray response) {
-                        // Case user and searchedUser used to chat => render old messages
-                        if(response.length() != 0) {
-                            try {
-                                String roomId = response.getJSONObject(0).getString("_id");
-                                MoveToMessageActivity(roomId, searchedUserDisplayName);
-                            } catch (JSONException e) {
-                                e.printStackTrace();
-                            }
-                        } else { // Case user and searchedUser haven't chatted yet
-                            MoveToMessageActivity(null, searchedUserDisplayName);
-                        }
-                    }
-                },
-                new Response.ErrorListener() {
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
-
-                    }
-                });
-        RequestQueue messageQueue = VolleySingleton.getInstance(getContext()).getRequestQueue();
-        messageQueue.add(request);
-    }
 
     @Nullable
     @Override
@@ -181,3 +146,4 @@ public class SearchFragment extends Fragment {
         searchView.setOnQueryTextListener(onQueryTextListener);
     }
 }
+
