@@ -19,6 +19,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
+import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -34,6 +35,7 @@ import com.sinhvien.appchatsocketio.activity.CreateGroupActivity;
 import com.sinhvien.appchatsocketio.activity.MessageActivity;
 import com.sinhvien.appchatsocketio.adapter.RoomAdapter;
 import com.sinhvien.appchatsocketio.helper.CustomJsonArrayRequest;
+import com.sinhvien.appchatsocketio.helper.LeaveGroupDialog;
 import com.sinhvien.appchatsocketio.helper.VolleySingleton;
 import com.sinhvien.appchatsocketio.model.Room;
 import com.sinhvien.appchatsocketio.model.User;
@@ -133,12 +135,11 @@ public class GroupFragment extends Fragment {
         }
     }
 
-
-    /*public void LeaveRoom(Room room) {
+    public void LeaveRoom(String roomId) {
         String url = getString(R.string.origin) + "/api/room/leaveRoom";
         HashMap<String, String> params = new HashMap<>();
         params.put("userId", user.getIdUser());
-        params.put("roomId", room.getIdRoom());
+        params.put("roomId", roomId);
         JsonObjectRequest request = new JsonObjectRequest(Request.Method.POST,
                 url,
                 new JSONObject(params),
@@ -157,7 +158,7 @@ public class GroupFragment extends Fragment {
                 });
         RequestQueue requestQueue = VolleySingleton.getInstance(getContext()).getRequestQueue();
         requestQueue.add(request);
-    }*/
+    }
 
     View.OnClickListener btnCreateOnClickListener = new View.OnClickListener() {
         @Override
@@ -174,5 +175,4 @@ public class GroupFragment extends Fragment {
         Init(view);
         btnCreateRoom.setOnClickListener(btnCreateOnClickListener);
     }
-
 }

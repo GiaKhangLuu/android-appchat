@@ -9,6 +9,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
 
 import com.android.volley.Request;
@@ -18,11 +19,13 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.sinhvien.appchatsocketio.R;
+import com.sinhvien.appchatsocketio.adapter.RoomAdapter;
 import com.sinhvien.appchatsocketio.fragment.AccountFragment;
 import com.sinhvien.appchatsocketio.fragment.GroupFragment;
 import com.sinhvien.appchatsocketio.fragment.ConversationsFragment;
 import com.sinhvien.appchatsocketio.fragment.SearchFragment;
 import com.sinhvien.appchatsocketio.helper.ChatHelper;
+import com.sinhvien.appchatsocketio.helper.LeaveGroupDialog;
 import com.sinhvien.appchatsocketio.helper.VolleySingleton;
 import com.sinhvien.appchatsocketio.model.User;
 
@@ -35,7 +38,8 @@ import java.util.HashMap;
 import io.socket.client.IO;
 import io.socket.client.Socket;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity
+        implements LeaveGroupDialog.LeaveGroupDialogListener {
     private BottomNavigationView bottomNav;
     private User user;
     private Socket socket;
@@ -51,7 +55,6 @@ public class MainActivity extends AppCompatActivity {
         socket.connect();
         socket.emit("setUpSocket", user.getIdUser());
     }
-
 
     private BottomNavigationView.OnNavigationItemSelectedListener navItemSelectedListener =
             new BottomNavigationView.OnNavigationItemSelectedListener() {
@@ -84,7 +87,9 @@ public class MainActivity extends AppCompatActivity {
         Bundle bundle = new Bundle();
         bundle.putSerializable("User", user);
         fragment.setArguments(bundle);
-        getSupportFragmentManager().beginTransaction().replace(R.id.containerMain, fragment).commit();
+        getSupportFragmentManager().beginTransaction()
+                .replace(R.id.containerMain, fragment, "fragment")
+                .commit();
     }
 
     @Override
@@ -94,5 +99,18 @@ public class MainActivity extends AppCompatActivity {
         Init();
         bottomNav.setOnNavigationItemSelectedListener(navItemSelectedListener);
         LoadFragment(new ConversationsFragment());
+    }
+
+    // The dialog fragment receives a reference to this Activity through the
+    // Fragment.onAttach() callback, which it uses to call the following methods
+    // defined by the LeaveGroupDialog.LeaveGroupDialogListener interface
+    @Override
+    public void onDialogPositiveClick(DialogFragment dialogFragment) {
+        // User touched the dialog's positive button
+        String roomId = RoomAdapter.getRoomIdUserChoice();
+        if(roomId != "") {
+            ((GroupFragment) getSupportFragmentManager().findFragmentById(R.id.containerMain))
+                    .LeaveRoom(roomId);
+        }
     }
 }
