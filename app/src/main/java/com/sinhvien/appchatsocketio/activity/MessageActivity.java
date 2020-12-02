@@ -161,15 +161,14 @@ public class MessageActivity extends AppCompatActivity {
             String senderId = user.getIdUser();
             String roomId = room.getIdRoom();
             Date time = Calendar.getInstance().getTime();
-            JSONObject object = SetData(senderId, roomId, content, time);
+            JSONObject message = SetData(senderId, roomId, content, time);
             // Occure when user and searched user havent chatted yet => create room
             if(room.getIdRoom() == null && searchedUserId != null)  {
-                CreateRoomThenSendMessage(object);
+                CreateRoomThenSendMessage(message);
             }
             // Occure when user and searched have chatted or this is multiple members room
             else {
-                socket.emit("user_send_message", object);
-                edtMessage.setText("");
+                EmitSendMessage(message);
             }
         }
     }
@@ -178,32 +177,38 @@ public class MessageActivity extends AppCompatActivity {
         HashMap hashMap = new HashMap();
         hashMap.put("members", members);
         hashMap.put("roomId", roomId);
-        JSONObject object = new JSONObject(hashMap);
-        socket.emit("create_new_room", object);
+        JSONObject newRoom = new JSONObject(hashMap);
+        socket.emit("create_new_room", newRoom);
     }
 
-    private void CreateRoomThenSendMessage(final JSONObject data) {
+    private void EmitSendMessage(JSONObject message) {
+        socket.emit("user_send_message", message);
+        edtMessage.setText("");
+    }
+
+    private void CreateRoomThenSendMessage(final JSONObject message) {
         String url = getString(R.string.origin) + "/api/room/createRoom";
         final String[] members = new String[] { user.getIdUser(), searchedUserId };
         HashMap hashMap = new HashMap();
         hashMap.put("name", "");
         hashMap.put("members", members);
-        JSONObject jsonObject = new JSONObject(hashMap);
+        JSONObject newRoom = new JSONObject(hashMap);
+        // Insert new room to db
         JsonObjectRequest request = new JsonObjectRequest(
                 Request.Method.POST,
                 url,
-                jsonObject,
+                newRoom,
                 new Response.Listener<JSONObject>() {
                     @Override
                     public void onResponse(JSONObject response) {
                         try {
-                            // Set roomId
+                            // Update roomId and searched UserId after create room
                             room.setIdRoom(response.getString("_id"));
                             searchedUserId = null;
+                            // Create new room on socket server
                             EmitJoinNewRoom(members, room.getIdRoom());
-                            data.put("roomId", room.getIdRoom());
-                            socket.emit("user_send_message", data);
-                            edtMessage.setText("");
+                            message.put("roomId", room.getIdRoom());
+                            EmitSendMessage(message);
                         } catch (Exception ex) {
                             Log.i("exception", ex.toString());
                         }

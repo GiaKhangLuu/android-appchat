@@ -55,9 +55,9 @@
             android:layout_marginLeft="8dp"
             android:text="Your groups" />
 
-        <ListView
-            android:id="@+id/lvRooms"
-            android:layout_marginTop="0dp"
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvGroup"
+            android:layout_marginTop="4dp"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
     </LinearLayout>

@@ -1,6 +1,9 @@
 package com.sinhvien.appchatsocketio.fragment;
 
 import android.content.Intent;
+import android.graphics.Canvas;
+import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -15,7 +18,10 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -42,9 +48,9 @@ import java.util.List;
 
 public class GroupFragment extends Fragment {
     private Button btnCreateRoom;
-    private ListView lvRooms;
+    private RecyclerView rvRooms;
     private ArrayList<Room> rooms;
-    private ArrayAdapter<Room> adapter;
+    private RoomAdapter roomAdapter;
     private User user;
 
     @Nullable
@@ -53,14 +59,39 @@ public class GroupFragment extends Fragment {
         return inflater.inflate(R.layout.fragment_room, container, false);
     }
 
+    private void SetRecyclerView() {
+        LinearLayoutManager layoutManager = new LinearLayoutManager(getContext());
+        rvRooms.setLayoutManager(layoutManager);
+        rvRooms.setAdapter(roomAdapter);
+        rvRooms.addItemDecoration(new RecyclerView.ItemDecoration() {
+            @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+            @Override
+            public void onDrawOver(@NonNull Canvas c, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
+                super.onDraw(c, parent, state);
+                Drawable divider = getContext().getDrawable(R.drawable.divider);
+                int left = parent.getPaddingLeft();
+                int right = parent.getWidth() - parent.getPaddingRight();
+                int childCount = parent.getChildCount();
+                for (int i = 0; i < childCount; i++) {
+                    View child = parent.getChildAt(i);
+                    RecyclerView.LayoutParams params = (RecyclerView.LayoutParams) child.getLayoutParams();
+                    int top = child.getBottom() + params.bottomMargin;
+                    int bottom = top + divider.getIntrinsicHeight();
+                    divider.setBounds(left, top, right, bottom);
+                    divider.draw(c);
+                }
+            }
+        });
+    }
+
     private void Init(View view) {
         user = (User) getArguments().getSerializable("User");
         btnCreateRoom = view.findViewById(R.id.btnCreateRoom);
-        lvRooms = view.findViewById(R.id.lvRooms);
+        rvRooms = view.findViewById(R.id.rvGroup);
         rooms = new ArrayList<>();
-        adapter = new RoomAdapter(getContext(), R.layout.row_room, rooms);
+        roomAdapter = new RoomAdapter(getContext(), rooms, user);
+        SetRecyclerView();
         FetchMultiMembersRoomsOfUser();
-        lvRooms.setAdapter(adapter);
     }
 
     private void FetchMultiMembersRoomsOfUser() {
@@ -75,7 +106,7 @@ public class GroupFragment extends Fragment {
                     public void onResponse(JSONArray response) {
                         try {
                             SetRooms(response);
-                            adapter.notifyDataSetChanged();
+                            roomAdapter.notifyDataSetChanged();
                         } catch (JSONException e) {
                             e.printStackTrace();
                         }
@@ -102,21 +133,8 @@ public class GroupFragment extends Fragment {
         }
     }
 
-    private void MoveToMessageActivity(Room room) {
-        Intent intent = new Intent(getContext(), MessageActivity.class);
-        intent.putExtra("User", user);
-        intent.putExtra("Room", room);
-        startActivity(intent);
-    }
 
-    AdapterView.OnItemClickListener onItemClickListener = new AdapterView.OnItemClickListener() {
-        @Override
-        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-            MoveToMessageActivity(adapter.getItem(position));
-        }
-    };
-
-    public void LeaveRoom(Room room) {
+    /*public void LeaveRoom(Room room) {
         String url = getString(R.string.origin) + "/api/room/leaveRoom";
         HashMap<String, String> params = new HashMap<>();
         params.put("userId", user.getIdUser());
@@ -139,7 +157,7 @@ public class GroupFragment extends Fragment {
                 });
         RequestQueue requestQueue = VolleySingleton.getInstance(getContext()).getRequestQueue();
         requestQueue.add(request);
-    }
+    }*/
 
     View.OnClickListener btnCreateOnClickListener = new View.OnClickListener() {
         @Override
@@ -155,7 +173,6 @@ public class GroupFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
         Init(view);
         btnCreateRoom.setOnClickListener(btnCreateOnClickListener);
-        lvRooms.setOnItemClickListener(onItemClickListener);
     }
 
 }
