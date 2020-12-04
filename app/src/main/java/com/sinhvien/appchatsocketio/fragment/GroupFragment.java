@@ -34,6 +34,7 @@ import com.sinhvien.appchatsocketio.R;
 import com.sinhvien.appchatsocketio.activity.CreateGroupActivity;
 import com.sinhvien.appchatsocketio.activity.MessageActivity;
 import com.sinhvien.appchatsocketio.adapter.RoomAdapter;
+import com.sinhvien.appchatsocketio.helper.ChatHelper;
 import com.sinhvien.appchatsocketio.helper.CustomJsonArrayRequest;
 import com.sinhvien.appchatsocketio.helper.LeaveGroupDialog;
 import com.sinhvien.appchatsocketio.helper.VolleySingleton;
@@ -45,8 +46,12 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+
+import io.socket.client.Socket;
 
 public class GroupFragment extends Fragment {
     private Button btnCreateRoom;
@@ -54,6 +59,9 @@ public class GroupFragment extends Fragment {
     private ArrayList<Room> rooms;
     private RoomAdapter roomAdapter;
     private User user;
+    private Socket socket;
+
+
 
     @Nullable
     @Override
@@ -87,6 +95,7 @@ public class GroupFragment extends Fragment {
     }
 
     private void Init(View view) {
+        socket = ChatHelper.getInstace(getContext()).GetSocket();
         user = (User) getArguments().getSerializable("User");
         btnCreateRoom = view.findViewById(R.id.btnCreateRoom);
         rvRooms = view.findViewById(R.id.rvGroup);
@@ -94,6 +103,19 @@ public class GroupFragment extends Fragment {
         roomAdapter = new RoomAdapter(getContext(), rooms, user);
         SetRecyclerView();
         FetchMultiMembersRoomsOfUser();
+    }
+
+    private void CheckSocketStatus() {
+        if(!socket.connected()) {
+            Toast.makeText(getContext(), "Connecting", Toast.LENGTH_SHORT).show();
+            SetUpSocket();
+        }
+    }
+
+    private void SetUpSocket() {
+        socket.connect();
+        socket.emit("setUpSocket", user.getIdUser());
+        Toast.makeText(getContext(), "Connected", Toast.LENGTH_SHORT).show();
     }
 
     private void FetchMultiMembersRoomsOfUser() {
@@ -135,7 +157,7 @@ public class GroupFragment extends Fragment {
         }
     }
 
-    public void LeaveRoom(String roomId) {
+    public void LeaveRoom(final String roomId) {
         String url = getString(R.string.origin) + "/api/room/leaveRoom";
         HashMap<String, String> params = new HashMap<>();
         params.put("userId", user.getIdUser());
@@ -147,6 +169,7 @@ public class GroupFragment extends Fragment {
                     @Override
                     public void onResponse(JSONObject response) {
                         Toast.makeText(getContext(), "Leave successfully", Toast.LENGTH_SHORT).show();
+                        EmitLeaveRoom(roomId);
                         FetchMultiMembersRoomsOfUser();
                     }
                 },
@@ -158,6 +181,17 @@ public class GroupFragment extends Fragment {
                 });
         RequestQueue requestQueue = VolleySingleton.getInstance(getContext()).getRequestQueue();
         requestQueue.add(request);
+    }
+
+    public void EmitLeaveRoom(String roomId) {
+        CheckSocketStatus();
+        Date time = Calendar.getInstance().getTime();
+        HashMap hashMap = new HashMap();
+        hashMap.put("roomId", roomId);
+        hashMap.put("memberId", user.getIdUser());
+        hashMap.put("time", time);
+        JSONObject data = new JSONObject(hashMap);
+        socket.emit("leave_room", data);
     }
 
     View.OnClickListener btnCreateOnClickListener = new View.OnClickListener() {

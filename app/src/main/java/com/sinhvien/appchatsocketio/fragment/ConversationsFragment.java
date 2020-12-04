@@ -192,6 +192,7 @@ public class ConversationsFragment extends Fragment {
     private void SetUpSocket() {
         socket.connect();
         socket.emit("setUpSocket", user.getIdUser());
+        Toast.makeText(getContext(), "Connected", Toast.LENGTH_SHORT).show();
     }
 
     private Emitter.Listener OnUpdateConversation = new Emitter.Listener() {
