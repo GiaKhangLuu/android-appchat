@@ -103,6 +103,7 @@ public class MessageActivity extends AppCompatActivity {
     private void SetUpSocket() {
         socket.connect();
         socket.emit("setUpSocket", user.getIdUser());
+        Toast.makeText(this, "Connected", Toast.LENGTH_SHORT).show();
     }
 
     private void RenderMessage(JSONArray jsonArray) {
@@ -110,15 +111,29 @@ public class MessageActivity extends AppCompatActivity {
             try {
                 JSONObject object = jsonArray.getJSONObject(i);
                 Message mess = new Message();
-                mess.setSenderId(object.getString("senderId"));
-                mess.setDisplayName(object.getString("displayName"));
+                // Set senderID = "" to render the message by view type
+                if(IsNotiMessage(object)) {
+                    mess.setSenderId("");
+                    mess.setDisplayName("");
+                }
+                else {
+                    mess.setSenderId(object.getString("senderId"));
+                    mess.setDisplayName(object.getString("displayName"));
+                }
                 mess.setTime(object.getString("time"));
                 mess.setMessage(object.getString("content"));
                 messages.add(mess);
+                Log.i("messages", mess.getMessage());
             } catch(Exception ex) {
                 ex.printStackTrace();
             }
         }
+    }
+
+    // Check whether the message is from server notification
+    private boolean IsNotiMessage(JSONObject jsonObject) {
+        if(jsonObject.isNull("senderId")) return true;
+        return false;
     }
 
     private void FetchMessagesInRoom() {
@@ -131,7 +146,6 @@ public class MessageActivity extends AppCompatActivity {
                 new Response.Listener<JSONArray>() {
                     @Override
                     public void onResponse(JSONArray response) {
-                        Log.i("Messages", response.toString());
                         RenderMessage(response);
                         adapter.notifyDataSetChanged();
                     }
@@ -243,6 +257,7 @@ public class MessageActivity extends AppCompatActivity {
                 public void run() {
                     JSONObject data = (JSONObject) args[0];
                     try {
+                        Toast.makeText(MessageActivity.this, data.toString(), Toast.LENGTH_SHORT).show();
                         Log.i("newmessage", data.toString());
                         AppendNewMessage(data);
                     } catch (Exception ex) {
@@ -257,8 +272,12 @@ public class MessageActivity extends AppCompatActivity {
         try {
             String roomId = data.getString("roomId");
             String content = data.getString("content");
-            String displayName = data.getString("displayName");
-            String senderId = data.getString("senderId");
+            String displayName = "";
+            String senderId = "";
+            if(!IsNotiMessage(data)) {
+                displayName = data.getString("displayName");
+                senderId = data.getString("senderId");
+            }
             String time = data.getString("time");
             if(IsSameRoom(roomId)) {
                 messages.add(new Message(senderId, displayName, content, time));
