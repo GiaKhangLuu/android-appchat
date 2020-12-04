@@ -18,6 +18,7 @@ public class MessageAdapter extends
         RecyclerView.Adapter<MessageAdapter.ViewHolder> {
     public static final int MSG_TYPE_LEFT = 0;
     public static final int MSG_TYPE_RIGHT = 1;
+    public static final int MSG_TYPE_CENTER = 2;
     private Context context;
     private ArrayList<Message> messages;
     private String userId;
@@ -33,6 +34,10 @@ public class MessageAdapter extends
     public MessageAdapter.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         if(viewType == MSG_TYPE_LEFT) {
             View view = LayoutInflater.from(context).inflate(R.layout.item_message_left, parent, false);
+            return new ViewHolder(view);
+        }
+        if(viewType == MSG_TYPE_CENTER) {
+            View view = LayoutInflater.from(context).inflate(R.layout.item_message_center, parent, false);
             return new ViewHolder(view);
         }
         View view = LayoutInflater.from(context).inflate(R.layout.item_message_right, parent, false);
@@ -55,6 +60,7 @@ public class MessageAdapter extends
 
     @Override
     public int getItemViewType(int position) {
+        if(messages.get(position).getSenderId().isEmpty()) return MSG_TYPE_CENTER;
         if(messages.get(position).getSenderId().equals(userId)) return MSG_TYPE_RIGHT;
         return MSG_TYPE_LEFT;
     }
