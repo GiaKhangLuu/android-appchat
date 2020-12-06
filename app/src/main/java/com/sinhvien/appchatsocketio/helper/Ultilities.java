@@ -9,59 +9,39 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 
 public class Ultilities {
-    private static LinkedList<User> userSelection = new LinkedList<>();
-    private static ArrayList<User> searchedUsers = new ArrayList<>();
 
-    public static LinkedList<User> GetUserSelection() {
-        return userSelection;
+    public static void AddToUserSelections(LinkedList<User> userSelections, User user) {
+        if(GetPositionOfUserInUserSelection(userSelections, user) == -1) {
+            userSelections.add(user);
+        }
     }
 
-    public static void AddToUserSelections(User user) {
-        userSelection.add(user);
-    }
-
-    public static void RemoveFromUserSelections(User user) {
-        int index = GetPositionOfUserInUserSelection(user);
+    public static int RemoveFromUserSelections(LinkedList<User> userSelections,  User user) {
+        int index = GetPositionOfUserInUserSelection(userSelections, user);
         if(index > -1) {
-            userSelection.remove(index);
+            userSelections.remove(index);
+            return index;
         }
+        return -1;
     }
 
-    public static int GetPositionOfUserInSearchedUsers(User user) {
-        for(int i = 0; i < searchedUsers.size(); i++) {
-            if(searchedUsers.get(i).getIdUser().equals(user.getIdUser())) {
-                return i;
+    public static int GetPositionOfUserInSearchedUsers(ArrayList<User> searchedUsers, User removeUser) {
+        for(User user : searchedUsers) {
+            if(user.getIdUser().equals(removeUser.getIdUser())) {
+                return searchedUsers.indexOf(user);
             }
         }
         return -1;
     }
 
 
-    public static int GetPositionOfUserInUserSelection(User user) {
-        for(int i = 0; i < userSelection.size(); i++) {
-            if(userSelection.get(i).getIdUser().equals(user.getIdUser())) {
-                return i;
+    public static int GetPositionOfUserInUserSelection(LinkedList<User> userSelections,
+                                                       User theChoosen) {
+        for(User user : userSelections) {
+            if(user.getIdUser().equals(theChoosen.getIdUser())) {
+                return userSelections.indexOf(user);
             }
         }
         return -1;
-    }
-
-    public static ArrayList<User> GetSearchedUser() {
-        return searchedUsers;
-    }
-
-    public static void SetSearchedUser(JSONArray jsonArray) {
-        searchedUsers.clear();
-        try {
-            for(int i = 0; i < jsonArray.length(); i++) {
-                JSONObject object = jsonArray.getJSONObject(i);
-                User user = new User();
-                user.setIdUser(object.getString("_id"));
-                user.setDisplayName(object.getString("displayName"));
-                searchedUsers.add(user);
-            }
-        } catch(Exception err) {
-            err.printStackTrace();
-        }
     }
 }

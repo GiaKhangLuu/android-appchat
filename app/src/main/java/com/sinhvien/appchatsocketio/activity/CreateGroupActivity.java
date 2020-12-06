@@ -2,26 +2,26 @@ package com.sinhvien.appchatsocketio.activity;
 
 import android.os.Bundle;
 import android.view.View;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageButton;
-import android.widget.ListView;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SearchView;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.sinhvien.appchatsocketio.R;
-import com.sinhvien.appchatsocketio.adapter.SearchedUserAddToGroupAdapter;
-import com.sinhvien.appchatsocketio.adapter.SelectedMemberAdapter;
-import com.sinhvien.appchatsocketio.helper.Ultilities;
+import com.sinhvien.appchatsocketio.adapter.SearchedUsersToAddAdapter;
+import com.sinhvien.appchatsocketio.adapter.UserSelectionsAdapter;
 import com.sinhvien.appchatsocketio.helper.CustomJsonArrayRequest;
+import com.sinhvien.appchatsocketio.helper.Ultilities;
 import com.sinhvien.appchatsocketio.helper.VolleySingleton;
 import com.sinhvien.appchatsocketio.model.User;
 
@@ -32,36 +32,49 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 
-public class CreateGroupActivity extends AppCompatActivity {
+public class CreateGroupActivity extends AppCompatActivity
+        implements
+        SearchedUsersToAddAdapter.SearchedUserListener,
+        UserSelectionsAdapter.UserSelectionsListener {
     // View
     private EditText edtGroupName;
     private SearchView searchViewUser;
-    private ListView lvSearchedUsers, lvGroupMembers;
+    private RecyclerView rvSearchedUsers, rvGroupMembers;
     private Button btnDone;
     private ImageButton imgBtnBack;
     // Data
     private User user;
     private ArrayList<User> searchedUsers;
     private LinkedList<User> userSelections;
-    private ArrayAdapter searchedUserAdapter, userSelectionAdapter;
+    private SearchedUsersToAddAdapter searchedUserAdapter;
+    private UserSelectionsAdapter userSelectionAdapter;
+
+    private void SetRecyclerView() {
+        LinearLayoutManager layoutManager1 = new LinearLayoutManager(this);
+        rvSearchedUsers.setHasFixedSize(true);
+        rvSearchedUsers.setLayoutManager(layoutManager1);
+        rvSearchedUsers.setAdapter(searchedUserAdapter);
+        LinearLayoutManager layoutManager2 = new LinearLayoutManager(this);
+        rvGroupMembers.setHasFixedSize(true);
+        rvGroupMembers.setLayoutManager(layoutManager2);
+        rvGroupMembers.setAdapter(userSelectionAdapter);
+    }
 
     private void Init() {
         // Init view
         edtGroupName = findViewById(R.id.edtGroupName);
         searchViewUser = findViewById(R.id.searchViewUser);
-        lvSearchedUsers = findViewById(R.id.lvSearchUser);
-        lvGroupMembers = findViewById(R.id.lvGroupMembers);
+        rvSearchedUsers = findViewById(R.id.rvSearchedUserToAdd);
+        rvGroupMembers = findViewById(R.id.rvGroupMember);
         btnDone = findViewById(R.id.btnDone);
         imgBtnBack = findViewById(R.id.imgBtnBack);
         // Init data
-        searchedUsers = Ultilities.GetSearchedUser();
-        userSelections = Ultilities.GetUserSelection();
-        searchedUsers.clear();
-        userSelections.clear();
-        searchedUserAdapter = new SearchedUserAddToGroupAdapter(this, R.layout.row_search_user_to_add, searchedUsers);
-        userSelectionAdapter = new SelectedMemberAdapter(this, R.layout.row_delete_user, userSelections);
-        lvSearchedUsers.setAdapter(searchedUserAdapter);
-        lvGroupMembers.setAdapter(userSelectionAdapter);
+        user = (User) getIntent().getSerializableExtra("User");
+        searchedUsers = new ArrayList<>();
+        userSelections = new LinkedList<>();
+        searchedUserAdapter = new SearchedUsersToAddAdapter(this, searchedUsers);
+        userSelectionAdapter = new UserSelectionsAdapter(this, userSelections);
+        SetRecyclerView();
     }
 
     View.OnClickListener imgBtnBackOnClickListener = new View.OnClickListener() {
@@ -71,8 +84,24 @@ public class CreateGroupActivity extends AppCompatActivity {
         }
     };
 
+    private void SetSearchedUsers(JSONArray jsonArray) {
+        searchedUsers.clear();
+        try {
+            for(int i = 0; i < jsonArray.length(); i++) {
+                JSONObject object = jsonArray.getJSONObject(i);
+                String userId = object.getString("_id");
+                if(!user.getIdUser().equals(userId)) {
+                    String displayName = object.getString("displayName");
+                    searchedUsers.add(new User(userId, displayName));
+                }
+            }
+        } catch(Exception err) {
+            err.printStackTrace();
+        }
+    }
+
     private void FetchUserByDisplayName(final String displayName) {
-        String url = getString(R.string.origin) + "/searchUser";
+        String url = getString(R.string.origin) + "/api/user/searchUsers";
         HashMap<String, String> param = new HashMap<>();
         param.put("displayName", displayName);
         CustomJsonArrayRequest request = new CustomJsonArrayRequest(Request.Method.POST,
@@ -81,7 +110,8 @@ public class CreateGroupActivity extends AppCompatActivity {
                 new Response.Listener<JSONArray>() {
                     @Override
                     public void onResponse(JSONArray response) {
-                        Ultilities.SetSearchedUser(response);
+                        searchedUsers.clear();
+                        SetSearchedUsers(response);
                         searchedUserAdapter.notifyDataSetChanged();
                     }
                 },
@@ -112,34 +142,42 @@ public class CreateGroupActivity extends AppCompatActivity {
         }
     };
 
-    public void AddUserToUserSelection(User user) {
-        Ultilities.AddToUserSelections(user);
-        userSelectionAdapter.notifyDataSetChanged();
-    }
-
-    public void RemoveUserFromUserSelection(User user) {
-        Ultilities.RemoveFromUserSelections(user);
-        userSelectionAdapter.notifyDataSetChanged();
-    }
-
-    public int IndexOfUserInUserSelection(User user) {
-        return Ultilities.GetPositionOfUserInUserSelection(user);
-    }
-
-    public void SetUncheckFromSearchedUser(User user) {
-        int index = Ultilities.GetPositionOfUserInSearchedUsers(user);
-        if(index > -1) {
-            ((CheckBox)lvSearchedUsers.getChildAt(index).findViewById(R.id.chbChoose)).setChecked(false);
-        }
-    }
-
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_create_group);
         Init();
-        user = (User) getIntent().getSerializableExtra("User");
         imgBtnBack.setOnClickListener(imgBtnBackOnClickListener);
         searchViewUser.setOnQueryTextListener(onQueryTextListener);
+    }
+
+    @Override
+    public void AddToUserSelections(User user) {
+        Ultilities.AddToUserSelections(userSelections, user);
+        userSelectionAdapter.notifyItemInserted(userSelections.size());
+    }
+
+    @Override
+    public void RemoveFromUserSelections(User user) {
+        int index = Ultilities.RemoveFromUserSelections(userSelections, user);
+        if(index > -1) {
+            userSelectionAdapter.notifyItemRemoved(index);
+        }
+    }
+
+    @Override
+    public int GetIndexOfUserInUserSelections(User user) {
+        return Ultilities.GetPositionOfUserInUserSelection(userSelections, user);
+    }
+
+    @Override
+    public void SetUncheckFromSearchedUser(User user) {
+        int index = Ultilities.GetPositionOfUserInSearchedUsers(searchedUsers, user);
+        if(index > -1) {
+            ((CheckBox)rvSearchedUsers.getChildAt(index).findViewById(R.id.chbChoose)).
+                    setChecked(false);
+            return;
+        }
+        RemoveFromUserSelections(user);
     }
 }

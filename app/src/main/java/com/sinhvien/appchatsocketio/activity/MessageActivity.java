@@ -257,7 +257,6 @@ public class MessageActivity extends AppCompatActivity {
                 public void run() {
                     JSONObject data = (JSONObject) args[0];
                     try {
-                        Toast.makeText(MessageActivity.this, data.toString(), Toast.LENGTH_SHORT).show();
                         Log.i("newmessage", data.toString());
                         AppendNewMessage(data);
                     } catch (Exception ex) {
