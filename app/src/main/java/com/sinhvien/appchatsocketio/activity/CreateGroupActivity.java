@@ -1,13 +1,18 @@
 package com.sinhvien.appchatsocketio.activity;
 
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.Toast;
 
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SearchView;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -17,9 +22,11 @@ import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonObjectRequest;
 import com.sinhvien.appchatsocketio.R;
 import com.sinhvien.appchatsocketio.adapter.SearchedUsersToAddAdapter;
 import com.sinhvien.appchatsocketio.adapter.UserSelectionsAdapter;
+import com.sinhvien.appchatsocketio.helper.ChatHelper;
 import com.sinhvien.appchatsocketio.helper.CustomJsonArrayRequest;
 import com.sinhvien.appchatsocketio.helper.Ultilities;
 import com.sinhvien.appchatsocketio.helper.VolleySingleton;
@@ -29,8 +36,12 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
+
+import io.socket.client.Socket;
 
 public class CreateGroupActivity extends AppCompatActivity
         implements
@@ -48,6 +59,7 @@ public class CreateGroupActivity extends AppCompatActivity
     private LinkedList<User> userSelections;
     private SearchedUsersToAddAdapter searchedUserAdapter;
     private UserSelectionsAdapter userSelectionAdapter;
+    private Socket socket;
 
     private void SetRecyclerView() {
         LinearLayoutManager layoutManager1 = new LinearLayoutManager(this);
@@ -69,12 +81,27 @@ public class CreateGroupActivity extends AppCompatActivity
         btnDone = findViewById(R.id.btnDone);
         imgBtnBack = findViewById(R.id.imgBtnBack);
         // Init data
+        socket = ChatHelper.getInstace(this).GetSocket();
         user = (User) getIntent().getSerializableExtra("User");
         searchedUsers = new ArrayList<>();
         userSelections = new LinkedList<>();
         searchedUserAdapter = new SearchedUsersToAddAdapter(this, searchedUsers);
         userSelectionAdapter = new UserSelectionsAdapter(this, userSelections);
         SetRecyclerView();
+        CheckSocketStatus();
+    }
+
+    private void CheckSocketStatus() {
+        if(!socket.connected()) {
+            Toast.makeText(this, "Connecting", Toast.LENGTH_SHORT).show();
+            SetUpSocket();
+        }
+    }
+
+    private void SetUpSocket() {
+        socket.connect();
+        socket.emit("setUpSocket", user.getIdUser());
+        Toast.makeText(this, "Connected", Toast.LENGTH_SHORT).show();
     }
 
     View.OnClickListener imgBtnBackOnClickListener = new View.OnClickListener() {
@@ -142,13 +169,117 @@ public class CreateGroupActivity extends AppCompatActivity
         }
     };
 
-    @Override
-    protected void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_create_group);
-        Init();
-        imgBtnBack.setOnClickListener(imgBtnBackOnClickListener);
-        searchViewUser.setOnQueryTextListener(onQueryTextListener);
+    private boolean IsGroupNameValid() {
+        String groupName = edtGroupName.getText().toString().trim();
+        if(!groupName.isEmpty()) return true;
+        return false;
+    }
+
+    private boolean IsEnoughMembers() {
+        // qtyOfMembers to create group is more than 2 (user and userSelections)
+        int qtyOfMembers = userSelections.size();
+        if(qtyOfMembers > 1) return true;
+        return false;
+    }
+
+    private boolean IsValid() {
+        if(!IsGroupNameValid()) {
+            edtGroupName.setError("You must name your group");
+            return false;
+        }
+        if(!IsEnoughMembers()) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setMessage("Your group must more than 2 members")
+                    .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+
+                        }
+                    });
+            builder.create().show();
+            return false;
+        }
+        return true;
+    }
+
+    private String[] GetMemberIds() {
+        String[] memberIds = new String[userSelections.size() + 1];
+        for(int i = 0; i < userSelections.size(); i++) {
+            memberIds[i] = userSelections.get(i).getIdUser();
+        }
+        memberIds[memberIds.length - 1] = user.getIdUser();
+        return  memberIds;
+    }
+
+    private void EmitJoinNewRoom(String[] members, String roomId) {
+        HashMap hashMap = new HashMap();
+        hashMap.put("members", members);
+        hashMap.put("roomId", roomId);
+        JSONObject newRoom = new JSONObject(hashMap);
+        socket.emit("create_new_room", newRoom);
+    }
+
+    public void NotifyNewRoom(String roomId) {
+        String content = user.getDisplayName() + " create the group";
+        Date time = Calendar.getInstance().getTime();
+        HashMap hashMap = new HashMap();
+        hashMap.put("roomId", roomId);
+        hashMap.put("content", content);
+        hashMap.put("time", time);
+        JSONObject message = new JSONObject(hashMap);
+        socket.emit("notify_new_room", message);
+    }
+
+    private void CreateGroup() {
+        CheckSocketStatus();
+        String url = getString(R.string.origin) + "/api/room/createRoom";
+        final String[] members = GetMemberIds();
+        HashMap hashMap = new HashMap();
+        hashMap.put("name", edtGroupName.getText().toString().trim());
+        hashMap.put("members", members);
+        JSONObject newRoom = new JSONObject(hashMap);
+        // Insert new room to db
+        JsonObjectRequest request = new JsonObjectRequest(
+                Request.Method.POST,
+                url,
+                newRoom,
+                new Response.Listener<JSONObject>() {
+                    @Override
+                    public void onResponse(JSONObject response) {
+                        try {
+                            String roomId = response.getString("_id");
+                            EmitJoinNewRoom(members, roomId);
+                            NotifyNewRoom(roomId);
+                            BackToMainActivity();
+                        } catch (Exception ex) {
+                            Log.i("exception", ex.toString());
+                        }
+                    }
+                },
+                new Response.ErrorListener() {
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        Log.i("exception", error.toString());
+                    }
+                }
+        );
+        RequestQueue requestQueue = VolleySingleton.getInstance(this).getRequestQueue();
+        requestQueue.add(request);
+    }
+
+    View.OnClickListener btnDoneOnClickListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            if(IsValid()) {
+                CreateGroup();
+            }
+        }
+    };
+
+    private void BackToMainActivity() {
+        Intent intent = new Intent(this, MainActivity.class);
+        intent.putExtra("User", user);
+        startActivity(intent);
     }
 
     @Override
@@ -179,5 +310,15 @@ public class CreateGroupActivity extends AppCompatActivity
             return;
         }
         RemoveFromUserSelections(user);
+    }
+
+    @Override
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_create_group);
+        Init();
+        imgBtnBack.setOnClickListener(imgBtnBackOnClickListener);
+        searchViewUser.setOnQueryTextListener(onQueryTextListener);
+        btnDone.setOnClickListener(btnDoneOnClickListener);
     }
 }
