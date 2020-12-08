@@ -19,15 +19,15 @@ import com.sinhvien.appchatsocketio.model.Conversation;
 import com.sinhvien.appchatsocketio.model.Room;
 import com.sinhvien.appchatsocketio.model.User;
 
-import java.util.ArrayList;
+import java.util.LinkedList;
 
 public class ConversationAdapter extends
         RecyclerView.Adapter<ConversationAdapter.ViewHolder> {
     private Context context;
     private User user;
-    private ArrayList<Conversation> conversations;
+    private LinkedList<Conversation> conversations;
 
-    public ConversationAdapter(Context context, ArrayList<Conversation> conversations, User user) {
+    public ConversationAdapter(Context context, LinkedList<Conversation> conversations, User user) {
         this.context = context;
         this.conversations = conversations;
         this.user = user;

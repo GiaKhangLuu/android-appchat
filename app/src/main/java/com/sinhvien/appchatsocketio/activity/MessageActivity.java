@@ -257,7 +257,7 @@ public class MessageActivity extends AppCompatActivity {
                 public void run() {
                     JSONObject data = (JSONObject) args[0];
                     try {
-                        Log.i("newmessage", data.toString());
+                        Log.i("abc", data.toString());
                         AppendNewMessage(data);
                     } catch (Exception ex) {
                         Log.i("newmessage", ex.toString());

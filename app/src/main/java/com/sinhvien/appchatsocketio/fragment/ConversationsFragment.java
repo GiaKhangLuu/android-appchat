@@ -47,8 +47,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.net.URISyntaxException;
-import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 
 import io.socket.client.Socket;
 import io.socket.emitter.Emitter;
@@ -56,7 +56,7 @@ import io.socket.emitter.Emitter;
 public class ConversationsFragment extends Fragment {
     private RecyclerView rvConversation;
     private User user;
-    private ArrayList<Conversation> conversations;
+    private LinkedList<Conversation> conversations;
     private ConversationAdapter adapter;
     private Socket socket;
 
@@ -97,7 +97,7 @@ public class ConversationsFragment extends Fragment {
     private void Init(View view) {
         socket = ChatHelper.getInstace(getContext()).GetSocket();
         rvConversation = view.findViewById(R.id.rvConversations);
-        conversations = new ArrayList<>();
+        conversations = new LinkedList<>();
         adapter = new ConversationAdapter(getContext(), conversations, user);
         CheckSocketStatus();
         SetRecyclerView();
@@ -198,6 +198,7 @@ public class ConversationsFragment extends Fragment {
     private Emitter.Listener OnUpdateConversation = new Emitter.Listener() {
         @Override
         public void call(final Object... args) {
+            Log.i("abc", args[0].toString());
             if(getActivity() != null) {
                 getActivity().runOnUiThread(new Runnable() {
                     @Override
