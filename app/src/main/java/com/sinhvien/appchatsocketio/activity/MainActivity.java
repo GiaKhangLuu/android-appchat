@@ -1,5 +1,6 @@
 package com.sinhvien.appchatsocketio.activity;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
@@ -39,7 +40,9 @@ import io.socket.client.IO;
 import io.socket.client.Socket;
 
 public class MainActivity extends AppCompatActivity
-        implements LeaveGroupDialog.LeaveGroupDialogListener {
+        implements
+        LeaveGroupDialog.LeaveGroupDialogListener,
+        AccountFragment.AccountFragmentListener {
     private BottomNavigationView bottomNav;
     private User user;
     private Socket socket;
@@ -71,7 +74,7 @@ public class MainActivity extends AppCompatActivity
                             LoadFragment(fragment);
                             break;
                         case R.id.itemAccount:
-                            fragment = new AccountFragment(user);
+                            fragment = new AccountFragment();
                             LoadFragment(fragment);
                             break;
                         case R.id.itemGroup:
@@ -112,5 +115,15 @@ public class MainActivity extends AppCompatActivity
             ((GroupFragment) getSupportFragmentManager().findFragmentById(R.id.containerMain))
                     .LeaveRoom(roomId);
         }
+    }
+
+    @Override
+    public void SignOut() {
+        if(socket.connected()) {
+            socket.disconnect();
+            Toast.makeText(this, "Socket disconnected", Toast.LENGTH_SHORT).show();
+        }
+        Intent intent = new Intent(this, WelcomeActivity.class);
+        startActivity(intent);
     }
 }

@@ -98,7 +98,6 @@ public class SignInActivity extends AppCompatActivity {
         edtPassword.setError("Account name or password are wrong");
     }
 
-
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
