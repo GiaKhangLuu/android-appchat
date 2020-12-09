@@ -89,6 +89,7 @@ public class SignInActivity extends AppCompatActivity {
         user.setDisplayName(response.getString("displayName"));
         user.setAccountName(response.getString("accountName"));
         user.setPassword(response.getString("password"));
+        user.setPhoneNumber(response.getString("phoneNumber"));
         intent.putExtra("User", user);
         startActivity(intent);
     }

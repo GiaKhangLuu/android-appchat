@@ -7,21 +7,6 @@
     android:layout_height="match_parent"
     android:background="@color/colorBackgroud">
 
-    <Button
-        android:id="@+id/btnSignOut"
-        android:layout_width="297dp"
-        android:layout_height="55dp"
-        android:layout_marginBottom="32dp"
-        android:background="@drawable/rounded_button_color_accent"
-        android:text="Sign out"
-        android:textColor="@android:color/white"
-        android:textSize="18sp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/lvSetting"
-        app:layout_constraintVertical_bias="0.769" />
-
     <TextView
         android:id="@+id/textView"
         android:layout_width="wrap_content"
@@ -36,32 +21,47 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
+        android:id="@+id/tvHi"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="28dp"
+        android:text="Hi, "
+        android:textColor="@color/colorBlack"
+        android:textFontWeight="@android:integer/config_longAnimTime"
+        android:textSize="24sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.387"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textView" />
+
+    <TextView
         android:id="@+id/tvDisplayName"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
         android:text="Alice"
         android:textColor="@color/colorBlack"
-        android:textSize="28sp"
+        android:textSize="24sp"
         android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="@+id/tvHi"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.498"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textView" />
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toEndOf="@+id/tvHi"
+        app:layout_constraintTop_toTopOf="@+id/tvHi"
+        app:layout_constraintVertical_bias="0.0" />
 
     <ListView
         android:id="@+id/lvSetting"
         android:layout_width="412dp"
         android:layout_height="wrap_content"
+        android:divider="@drawable/divider"
         android:footerDividersEnabled="true"
         android:headerDividersEnabled="true"
-        android:divider="@drawable/divider"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="1.0"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/tvDisplayName"
-        app:layout_constraintVertical_bias="0.118" />
+        app:layout_constraintVertical_bias="0.526" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -7,6 +7,23 @@ public class User implements Serializable {
     private String displayName;
     private String accountName;
     private String password;
+    private String phoneNumber;
+
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
+
+    public User(String idUser, String displayName, String accountName, String password, String phoneNumber) {
+        this.idUser = idUser;
+        this.displayName = displayName;
+        this.accountName = accountName;
+        this.password = password;
+        this.phoneNumber = phoneNumber;
+    }
 
     public User() {}
 

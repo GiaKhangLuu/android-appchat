@@ -9,6 +9,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -19,6 +20,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.sinhvien.appchatsocketio.R;
+import com.sinhvien.appchatsocketio.activity.ActivityChangeProfile;
 import com.sinhvien.appchatsocketio.activity.SignInActivity;
 import com.sinhvien.appchatsocketio.activity.WelcomeActivity;
 import com.sinhvien.appchatsocketio.adapter.SettingAdapter;
@@ -30,10 +32,13 @@ import java.util.ArrayList;
 import io.socket.client.Socket;
 
 public class AccountFragment extends Fragment {
+    private final int CHANGE_PROFILE = 0;
+    private final int CHANGE_PASSWORD = 1;
+    private final int SIGN_OUT = 2;
+
     private TextView tvDisplayName;
     private User user;
     ListView lvSetting;
-    Button btnSignOut;
     ArrayList<String> settingTitles;
     SettingAdapter settingAdapter;
     Socket socket;
@@ -45,9 +50,9 @@ public class AccountFragment extends Fragment {
 
     private void SetSettingTitles() {
         settingTitles = new ArrayList<>();
-        settingTitles.add("Change Display Name");
-        settingTitles.add("Change Phone Number");
+        settingTitles.add("Change Profile");
         settingTitles.add("Change Password");
+        settingTitles.add("Sign Out");
     }
 
     private void Init(View view) {
@@ -56,7 +61,6 @@ public class AccountFragment extends Fragment {
         tvDisplayName = view.findViewById(R.id.tvDisplayName);
         tvDisplayName.setText(user.getDisplayName());
         lvSetting = view.findViewById(R.id.lvSetting);
-        btnSignOut = view.findViewById(R.id.btnSignOut);
         SetSettingTitles();
         settingAdapter = new SettingAdapter(getContext(), R.layout.row_setting, settingTitles);
         lvSetting.setAdapter(settingAdapter);
@@ -74,34 +78,51 @@ public class AccountFragment extends Fragment {
         return inflater.inflate(R.layout.fragment_account, container, false);
     }
 
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        Log.i("fragment", "destroy");
+    private void ShowDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+        builder.setTitle("Confirm")
+                .setMessage("Do you wanna sign out ?")
+                .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        listener.SignOut();
+                    }
+                })
+                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                    }
+                });
+        builder.create().show();
+    }
+
+    private void ChangeProfile() {
+        Intent intent = new Intent(getActivity(), ActivityChangeProfile.class);
+        intent.putExtra("User", user);
+        startActivity(intent);
+    }
+
+    private void UserSelection(int option) {
+        switch (option) {
+            case CHANGE_PROFILE:
+                ChangeProfile();
+                break;
+            case CHANGE_PASSWORD:
+                break;
+            case SIGN_OUT:
+                ShowDialog();
+                break;
+        }
     }
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         Init(view);
-        btnSignOut.setOnClickListener(new View.OnClickListener() {
+        lvSetting.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
-            public void onClick(View v) {
-                AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
-                builder.setTitle("Confirm")
-                        .setMessage("Do you wanna sign out ?")
-                        .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                listener.SignOut();
-                            }
-                        })
-                        .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                            }
-                        });
-                builder.create().show();
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                UserSelection(position);
             }
         });
     }
