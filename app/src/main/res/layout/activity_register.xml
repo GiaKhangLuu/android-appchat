@@ -7,12 +7,12 @@
     android:background="@color/colorBackgroud">
 
     <EditText
-        android:id="@+id/edtUsername"
+        android:id="@+id/edtAccountName"
         android:layout_width="297dp"
         android:layout_height="45dp"
         android:layout_marginTop="168dp"
         android:backgroundTint="@color/colorAccent"
-        android:hint="@string/username"
+        android:hint="Account Name"
         android:inputType="text"
         android:textColor="@android:color/black"
         android:textColorHint="@android:color/darker_gray"
@@ -30,9 +30,9 @@
         android:inputType="textPassword"
         android:textColor="@android:color/black"
         android:textColorHint="@android:color/darker_gray"
-        app:layout_constraintEnd_toEndOf="@id/edtUsername"
-        app:layout_constraintStart_toStartOf="@+id/edtUsername"
-        app:layout_constraintTop_toBottomOf="@+id/edtUsername" />
+        app:layout_constraintEnd_toEndOf="@id/edtAccountName"
+        app:layout_constraintStart_toStartOf="@+id/edtAccountName"
+        app:layout_constraintTop_toBottomOf="@+id/edtAccountName" />
 
     <EditText
         android:id="@+id/edtPhone"
@@ -45,7 +45,7 @@
         android:backgroundTint="@color/colorAccent"
         android:ems="10"
         android:hint="@string/phone"
-        android:inputType="phone"
+        android:inputType="number"
         android:textColor="@android:color/black"
         android:textColorHint="@android:color/darker_gray"
         app:layout_constraintEnd_toEndOf="@+id/edtConfirmPassword"
