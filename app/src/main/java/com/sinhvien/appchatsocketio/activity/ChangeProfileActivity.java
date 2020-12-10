@@ -5,7 +5,6 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -26,7 +25,7 @@ import org.json.JSONObject;
 import java.util.HashMap;
 import java.util.regex.Pattern;
 
-public class ActivityChangeProfile extends AppCompatActivity {
+public class ChangeProfileActivity extends AppCompatActivity {
     User user;
     EditText edtDisplayName, edtPhone, edtAccountName;
     Button btnDone;
@@ -101,7 +100,7 @@ public class ActivityChangeProfile extends AppCompatActivity {
                             user.setPassword(response.getString("password"));
                             user.setDisplayName(response.getString("displayName"));
                             Intent intent = new Intent(
-                                    ActivityChangeProfile.this,
+                                    ChangeProfileActivity.this,
                                     MainActivity.class);
                             intent.putExtra("User", user);
                             startActivity(intent);

@@ -5,24 +5,20 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
-import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.sinhvien.appchatsocketio.R;
-import com.sinhvien.appchatsocketio.activity.ActivityChangeProfile;
-import com.sinhvien.appchatsocketio.activity.SignInActivity;
-import com.sinhvien.appchatsocketio.activity.WelcomeActivity;
+import com.sinhvien.appchatsocketio.activity.ChangePasswordActivity;
+import com.sinhvien.appchatsocketio.activity.ChangeProfileActivity;
 import com.sinhvien.appchatsocketio.adapter.SettingAdapter;
 import com.sinhvien.appchatsocketio.helper.ChatHelper;
 import com.sinhvien.appchatsocketio.model.User;
@@ -97,7 +93,13 @@ public class AccountFragment extends Fragment {
     }
 
     private void ChangeProfile() {
-        Intent intent = new Intent(getActivity(), ActivityChangeProfile.class);
+        Intent intent = new Intent(getActivity(), ChangeProfileActivity.class);
+        intent.putExtra("User", user);
+        startActivity(intent);
+    }
+
+    private void ChangePassword() {
+        Intent intent = new Intent(getActivity(), ChangePasswordActivity.class);
         intent.putExtra("User", user);
         startActivity(intent);
     }
@@ -108,6 +110,7 @@ public class AccountFragment extends Fragment {
                 ChangeProfile();
                 break;
             case CHANGE_PASSWORD:
+                ChangePassword();
                 break;
             case SIGN_OUT:
                 ShowDialog();

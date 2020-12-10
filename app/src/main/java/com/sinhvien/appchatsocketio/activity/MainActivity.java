@@ -51,7 +51,7 @@ public class MainActivity extends AppCompatActivity
         bottomNav = findViewById(R.id.bottomNav);
         user = (User) getIntent().getSerializableExtra("User");
         socket = ChatHelper.getInstace(this).GetSocket();
-        SetUpSocket();
+        //SetUpSocket();
     }
 
     private void SetUpSocket() {
