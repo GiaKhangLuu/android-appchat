@@ -101,10 +101,11 @@ public class ConversationsFragment extends Fragment {
         adapter = new ConversationAdapter(getContext(), conversations, user);
         CheckSocketStatus();
         SetRecyclerView();
-        FetchConversations();
     }
 
     private void FetchConversations() {
+        conversations.clear();
+        adapter.notifyDataSetChanged();
         String url = getString(R.string.origin) + "/api/message/conversations";
         HashMap<String, String> params = new HashMap<>();
         params.put("userId", user.getIdUser());
@@ -191,28 +192,26 @@ public class ConversationsFragment extends Fragment {
 
     private void SetUpSocket() {
         socket.connect();
-        socket.emit("setUpSocket", user.getIdUser());
+        socket.emit(ChatHelper.EMIT_SETUP_SOCKET, user.getIdUser());
         Toast.makeText(getContext(), "Connected", Toast.LENGTH_SHORT).show();
     }
 
     private Emitter.Listener OnUpdateConversation = new Emitter.Listener() {
         @Override
         public void call(final Object... args) {
-            Log.i("abc", args[0].toString());
-            if(getActivity() != null) {
-                getActivity().runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            JSONObject data = (JSONObject) args[0];
-                            RemoveConversation(data);
-                            InsertNewConversation(data);
-                        } catch (Exception ex) {
-                            Toast.makeText(getContext(), "Error", Toast.LENGTH_SHORT).show();
-                        }
+            getActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        JSONObject data = (JSONObject) args[0];
+                        Log.i("abc", data.toString());
+                        RemoveConversation(data);
+                        InsertNewConversation(data);
+                    } catch (Exception ex) {
+                        Toast.makeText(getContext(), "Error", Toast.LENGTH_SHORT).show();
                     }
-                });
-            }
+                }
+            });
         }
     };
 
@@ -256,6 +255,15 @@ public class ConversationsFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
         user = (User) getArguments().getSerializable("User");
         Init(view);
-        socket.on("update_conversation", OnUpdateConversation);
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        socket.off(ChatHelper.ON_NEW_MESSAGE);
+        socket.off(ChatHelper.ON_SHOW_NOTIFICATION);
+        socket.off(ChatHelper.ON_SHOW_NOTI_IN_MSG_ACTIVITY);
+        socket.on(ChatHelper.ON_UPDATE_CONVERSATION, OnUpdateConversation);
+        FetchConversations();
     }
 }

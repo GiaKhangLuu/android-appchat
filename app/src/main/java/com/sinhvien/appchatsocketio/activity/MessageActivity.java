@@ -1,5 +1,7 @@
 package com.sinhvien.appchatsocketio.activity;
 
+import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -11,6 +13,7 @@ import android.widget.ListView;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -26,6 +29,7 @@ import com.sinhvien.appchatsocketio.R;
 import com.sinhvien.appchatsocketio.adapter.MessageAdapter;
 import com.sinhvien.appchatsocketio.helper.ChatHelper;
 import com.sinhvien.appchatsocketio.helper.CustomJsonArrayRequest;
+import com.sinhvien.appchatsocketio.helper.NotificationHelper;
 import com.sinhvien.appchatsocketio.helper.VolleySingleton;
 import com.sinhvien.appchatsocketio.model.Message;
 import com.sinhvien.appchatsocketio.model.Room;
@@ -43,7 +47,7 @@ import java.util.HashMap;
 import io.socket.client.Socket;
 import io.socket.emitter.Emitter;
 
-public class MessageActivity extends AppCompatActivity {
+public class MessageActivity extends AppCompatActivity implements Emitter.Listener {
     // View
     private Toolbar toolbarTitle;
     private RecyclerView rvMessage;
@@ -102,7 +106,7 @@ public class MessageActivity extends AppCompatActivity {
 
     private void SetUpSocket() {
         socket.connect();
-        socket.emit("setUpSocket", user.getIdUser());
+        socket.emit(ChatHelper.EMIT_SETUP_SOCKET, user.getIdUser());
         Toast.makeText(this, "Connected", Toast.LENGTH_SHORT).show();
     }
 
@@ -192,11 +196,11 @@ public class MessageActivity extends AppCompatActivity {
         hashMap.put("members", members);
         hashMap.put("roomId", roomId);
         JSONObject newRoom = new JSONObject(hashMap);
-        socket.emit("create_new_room", newRoom);
+        socket.emit(ChatHelper.EMIT_CREATE_NEW_ROOM, newRoom);
     }
 
     private void EmitSendMessage(JSONObject message) {
-        socket.emit("user_send_message", message);
+        socket.emit(ChatHelper.EMIT_SEND_MESSAGE, message);
         edtMessage.setText("");
     }
 
@@ -306,6 +310,45 @@ public class MessageActivity extends AppCompatActivity {
                 SendMessage();
             }
         });
-        socket.on("new_message", OnNewMessage);
+        // Off event ON_SHOW_NOTIFICATION to reset the old and update new
+        socket.off(ChatHelper.ON_SHOW_NOTIFICATION);
+        socket.off(ChatHelper.ON_UPDATE_CONVERSATION);
+        socket.on(ChatHelper.ON_SHOW_NOTI_IN_MSG_ACTIVITY, this);
+        socket.on(ChatHelper.ON_NEW_MESSAGE, OnNewMessage);
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        Toast.makeText(this, "new intent", Toast.LENGTH_SHORT).show();
+        user = (User) intent.getSerializableExtra("User");
+        room = (Room) intent.getSerializableExtra("Room");
+        messages.clear();
+        adapter.notifyDataSetChanged();
+        FetchMessagesInRoom();
+        toolbarTitle.setTitle(room.getName());
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.M)
+    @Override
+    public void call(Object... args) {
+        JSONObject data = (JSONObject) args[0];
+        try {
+            String roomName = data.getString("name");
+            String content = data.getString("content");
+            String roomId = data.getString("roomId");
+            if(roomId.equals(this.room.getIdRoom())) return;
+            Room room = new Room();
+            room.setIdRoom(roomId);
+            room.setName(roomName);
+            NotificationHelper notificationHelper = new NotificationHelper(
+                    this,
+                    user,
+                    room
+            );
+            notificationHelper.SendNoti(content);
+        } catch (JSONException ex) {
+            Toast.makeText(this, ex.getLocalizedMessage(), Toast.LENGTH_SHORT).show();
+        }
     }
 }

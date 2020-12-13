@@ -28,6 +28,7 @@ import com.sinhvien.appchatsocketio.adapter.SearchedUsersToAddAdapter;
 import com.sinhvien.appchatsocketio.adapter.UserSelectionsAdapter;
 import com.sinhvien.appchatsocketio.helper.ChatHelper;
 import com.sinhvien.appchatsocketio.helper.CustomJsonArrayRequest;
+import com.sinhvien.appchatsocketio.helper.OnShowNotiListener;
 import com.sinhvien.appchatsocketio.helper.Ultilities;
 import com.sinhvien.appchatsocketio.helper.VolleySingleton;
 import com.sinhvien.appchatsocketio.model.User;
@@ -42,6 +43,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 
 import io.socket.client.Socket;
+import io.socket.emitter.Emitter;
 
 public class CreateGroupActivity extends AppCompatActivity
         implements
@@ -60,6 +62,7 @@ public class CreateGroupActivity extends AppCompatActivity
     private SearchedUsersToAddAdapter searchedUserAdapter;
     private UserSelectionsAdapter userSelectionAdapter;
     private Socket socket;
+    private Emitter.Listener onShowNotiListener;
 
     private void SetRecyclerView() {
         LinearLayoutManager layoutManager1 = new LinearLayoutManager(this);
@@ -89,6 +92,7 @@ public class CreateGroupActivity extends AppCompatActivity
         userSelectionAdapter = new UserSelectionsAdapter(this, userSelections);
         SetRecyclerView();
         CheckSocketStatus();
+        onShowNotiListener = new OnShowNotiListener(user, this);
     }
 
     private void CheckSocketStatus() {
@@ -100,7 +104,7 @@ public class CreateGroupActivity extends AppCompatActivity
 
     private void SetUpSocket() {
         socket.connect();
-        socket.emit("setUpSocket", user.getIdUser());
+        socket.emit(ChatHelper.EMIT_SETUP_SOCKET, user.getIdUser());
         Toast.makeText(this, "Connected", Toast.LENGTH_SHORT).show();
     }
 
@@ -216,10 +220,10 @@ public class CreateGroupActivity extends AppCompatActivity
         hashMap.put("members", members);
         hashMap.put("roomId", roomId);
         JSONObject newRoom = new JSONObject(hashMap);
-        socket.emit("create_new_room", newRoom);
+        socket.emit(ChatHelper.EMIT_CREATE_NEW_ROOM, newRoom);
     }
 
-    public void NotifyNewRoom(String roomId) {
+    public void EmitNotifyNewRoom(String roomId) {
         String content = user.getDisplayName() + " create the group";
         Date time = Calendar.getInstance().getTime();
         HashMap hashMap = new HashMap();
@@ -227,7 +231,7 @@ public class CreateGroupActivity extends AppCompatActivity
         hashMap.put("content", content);
         hashMap.put("time", time);
         JSONObject message = new JSONObject(hashMap);
-        socket.emit("notify_new_room", message);
+        socket.emit(ChatHelper.EMIT_NOTIFY_NEW_ROOM, message);
     }
 
     private void CreateGroup() {
@@ -249,7 +253,7 @@ public class CreateGroupActivity extends AppCompatActivity
                         try {
                             String roomId = response.getString("_id");
                             EmitJoinNewRoom(members, roomId);
-                            NotifyNewRoom(roomId);
+                            EmitNotifyNewRoom(roomId);
                             BackToMainActivity();
                         } catch (Exception ex) {
                             Log.i("exception", ex.toString());
@@ -320,5 +324,14 @@ public class CreateGroupActivity extends AppCompatActivity
         imgBtnBack.setOnClickListener(imgBtnBackOnClickListener);
         searchViewUser.setOnQueryTextListener(onQueryTextListener);
         btnDone.setOnClickListener(btnDoneOnClickListener);
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        socket.off(ChatHelper.ON_SHOW_NOTI_IN_MSG_ACTIVITY);
+        socket.off(ChatHelper.ON_NEW_MESSAGE);
+        socket.off(ChatHelper.ON_UPDATE_CONVERSATION);
+        socket.on(ChatHelper.ON_SHOW_NOTIFICATION, onShowNotiListener);
     }
 }

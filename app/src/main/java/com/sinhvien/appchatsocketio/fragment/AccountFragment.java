@@ -21,11 +21,13 @@ import com.sinhvien.appchatsocketio.activity.ChangePasswordActivity;
 import com.sinhvien.appchatsocketio.activity.ChangeProfileActivity;
 import com.sinhvien.appchatsocketio.adapter.SettingAdapter;
 import com.sinhvien.appchatsocketio.helper.ChatHelper;
+import com.sinhvien.appchatsocketio.helper.OnShowNotiListener;
 import com.sinhvien.appchatsocketio.model.User;
 
 import java.util.ArrayList;
 
 import io.socket.client.Socket;
+import io.socket.emitter.Emitter;
 
 public class AccountFragment extends Fragment {
     private final int CHANGE_PROFILE = 0;
@@ -39,6 +41,7 @@ public class AccountFragment extends Fragment {
     SettingAdapter settingAdapter;
     Socket socket;
     AccountFragmentListener listener;
+    Emitter.Listener showNotiListener;
 
     public interface AccountFragmentListener {
         void SignOut();
@@ -52,8 +55,9 @@ public class AccountFragment extends Fragment {
     }
 
     private void Init(View view) {
-        socket = ChatHelper.getInstace(getContext()).GetSocket();
         user = (User) getArguments().getSerializable("User");
+        showNotiListener = new OnShowNotiListener(user, getContext());
+        socket = ChatHelper.getInstace(getContext()).GetSocket();
         tvDisplayName = view.findViewById(R.id.tvDisplayName);
         tvDisplayName.setText(user.getDisplayName());
         lvSetting = view.findViewById(R.id.lvSetting);
@@ -128,5 +132,14 @@ public class AccountFragment extends Fragment {
                 UserSelection(position);
             }
         });
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        socket.off(ChatHelper.ON_UPDATE_CONVERSATION);
+        socket.off(ChatHelper.ON_NEW_MESSAGE);
+        socket.off(ChatHelper.ON_SHOW_NOTI_IN_MSG_ACTIVITY);
+        socket.on(ChatHelper.ON_SHOW_NOTIFICATION, showNotiListener);
     }
 }

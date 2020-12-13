@@ -13,11 +13,22 @@ import java.net.URISyntaxException;
 
 import io.socket.client.IO;
 import io.socket.client.Socket;
+import io.socket.emitter.Emitter;
 
 public class ChatHelper{
+    public static final String EMIT_SETUP_SOCKET = "setUpSocket";
+    public static final String EMIT_SEND_MESSAGE = "user_send_message";
+    public static final String EMIT_CREATE_NEW_ROOM = "create_new_room";
+    public static final String EMIT_NOTIFY_NEW_ROOM = "notify_new_room";
+    public static final String EMIT_LEAVE_ROOM = "leave_room";
+
+    public static final String ON_NEW_MESSAGE = "new_message";
+    public static final String ON_UPDATE_CONVERSATION = "update_conversation";
+    public static final String ON_SHOW_NOTIFICATION = "show_notification";
+    public static final String ON_SHOW_NOTI_IN_MSG_ACTIVITY = "show_notification";
+
     private static ChatHelper chatInstance;
     private Socket socket;
-
 
     private ChatHelper(Context context) {
         if(socket == null) {

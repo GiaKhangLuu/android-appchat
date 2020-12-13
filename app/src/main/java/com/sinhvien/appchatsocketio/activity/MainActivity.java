@@ -1,6 +1,8 @@
 package com.sinhvien.appchatsocketio.activity;
 
+import android.app.NotificationManager;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
@@ -9,6 +11,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
@@ -27,7 +30,9 @@ import com.sinhvien.appchatsocketio.fragment.ConversationsFragment;
 import com.sinhvien.appchatsocketio.fragment.SearchFragment;
 import com.sinhvien.appchatsocketio.helper.ChatHelper;
 import com.sinhvien.appchatsocketio.helper.LeaveGroupDialog;
+import com.sinhvien.appchatsocketio.helper.NotificationHelper;
 import com.sinhvien.appchatsocketio.helper.VolleySingleton;
+import com.sinhvien.appchatsocketio.model.Room;
 import com.sinhvien.appchatsocketio.model.User;
 
 import org.json.JSONException;
@@ -38,6 +43,7 @@ import java.util.HashMap;
 
 import io.socket.client.IO;
 import io.socket.client.Socket;
+import io.socket.emitter.Emitter;
 
 public class MainActivity extends AppCompatActivity
         implements
@@ -52,11 +58,6 @@ public class MainActivity extends AppCompatActivity
         user = (User) getIntent().getSerializableExtra("User");
         socket = ChatHelper.getInstace(this).GetSocket();
         //SetUpSocket();
-    }
-
-    private void SetUpSocket() {
-        socket.connect();
-        socket.emit("setUpSocket", user.getIdUser());
     }
 
     private BottomNavigationView.OnNavigationItemSelectedListener navItemSelectedListener =
@@ -117,13 +118,17 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.M)
     @Override
     public void SignOut() {
         if(socket.connected()) {
             socket.disconnect();
+            user = null;
+            getSystemService(NotificationManager.class).cancelAll();
             Toast.makeText(this, "Socket disconnected", Toast.LENGTH_SHORT).show();
         }
         Intent intent = new Intent(this, WelcomeActivity.class);
         startActivity(intent);
     }
+
 }

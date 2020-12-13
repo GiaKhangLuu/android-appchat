@@ -1,5 +1,6 @@
 package com.sinhvien.appchatsocketio.fragment;
 
+import android.content.ContextWrapper;
 import android.content.Intent;
 import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
@@ -32,11 +33,13 @@ import com.android.volley.toolbox.JsonArrayRequest;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.sinhvien.appchatsocketio.R;
 import com.sinhvien.appchatsocketio.activity.CreateGroupActivity;
+import com.sinhvien.appchatsocketio.activity.MainActivity;
 import com.sinhvien.appchatsocketio.activity.MessageActivity;
 import com.sinhvien.appchatsocketio.adapter.RoomAdapter;
 import com.sinhvien.appchatsocketio.helper.ChatHelper;
 import com.sinhvien.appchatsocketio.helper.CustomJsonArrayRequest;
 import com.sinhvien.appchatsocketio.helper.LeaveGroupDialog;
+import com.sinhvien.appchatsocketio.helper.OnShowNotiListener;
 import com.sinhvien.appchatsocketio.helper.VolleySingleton;
 import com.sinhvien.appchatsocketio.model.Room;
 import com.sinhvien.appchatsocketio.model.User;
@@ -45,6 +48,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -52,6 +56,7 @@ import java.util.HashMap;
 import java.util.List;
 
 import io.socket.client.Socket;
+import io.socket.emitter.Emitter;
 
 public class GroupFragment extends Fragment {
     private Button btnCreateRoom;
@@ -60,8 +65,7 @@ public class GroupFragment extends Fragment {
     private RoomAdapter roomAdapter;
     private User user;
     private Socket socket;
-
-
+    private Emitter.Listener showNotiListener;
 
     @Nullable
     @Override
@@ -95,8 +99,9 @@ public class GroupFragment extends Fragment {
     }
 
     private void Init(View view) {
-        socket = ChatHelper.getInstace(getContext()).GetSocket();
         user = (User) getArguments().getSerializable("User");
+        showNotiListener = new OnShowNotiListener(user, getContext());
+        socket = ChatHelper.getInstace(getContext()).GetSocket();
         btnCreateRoom = view.findViewById(R.id.btnCreateRoom);
         rvRooms = view.findViewById(R.id.rvGroup);
         rooms = new ArrayList<>();
@@ -114,7 +119,7 @@ public class GroupFragment extends Fragment {
 
     private void SetUpSocket() {
         socket.connect();
-        socket.emit("setUpSocket", user.getIdUser());
+        socket.emit(ChatHelper.EMIT_SETUP_SOCKET, user.getIdUser());
         Toast.makeText(getContext(), "Connected", Toast.LENGTH_SHORT).show();
     }
 
@@ -191,7 +196,7 @@ public class GroupFragment extends Fragment {
         hashMap.put("memberId", user.getIdUser());
         hashMap.put("time", time);
         JSONObject data = new JSONObject(hashMap);
-        socket.emit("leave_room", data);
+        socket.emit(ChatHelper.EMIT_LEAVE_ROOM, data);
     }
 
     View.OnClickListener btnCreateOnClickListener = new View.OnClickListener() {
@@ -208,5 +213,14 @@ public class GroupFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
         Init(view);
         btnCreateRoom.setOnClickListener(btnCreateOnClickListener);
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        socket.off(ChatHelper.ON_NEW_MESSAGE);
+        socket.off(ChatHelper.ON_UPDATE_CONVERSATION);
+        socket.off(ChatHelper.ON_SHOW_NOTI_IN_MSG_ACTIVITY);
+        socket.on(ChatHelper.ON_SHOW_NOTIFICATION, showNotiListener);
     }
 }
