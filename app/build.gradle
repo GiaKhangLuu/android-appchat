@@ -6,7 +6,7 @@ android {
 
     defaultConfig {
         applicationId "com.sinhvien.appchatsocketio"
-        minSdkVersion 15
+        minSdkVersion 17
         targetSdkVersion 30
         versionCode 1
         versionName "1.0"
@@ -34,4 +34,5 @@ dependencies {
     implementation ('io.socket:socket.io-client:1.0.0') {
         exclude group: 'org.json', module: 'json'
     }
+    implementation 'pl.droidsonroids.gif:android-gif-drawable:1.2.19'
 }

@@ -21,11 +21,15 @@ public class ChatHelper{
     public static final String EMIT_CREATE_NEW_ROOM = "create_new_room";
     public static final String EMIT_NOTIFY_NEW_ROOM = "notify_new_room";
     public static final String EMIT_LEAVE_ROOM = "leave_room";
+    public static final String EMIT_TYPING = "typing";
+    public static final String EMIT_STOP_TYPING = "stop_typing";
 
     public static final String ON_NEW_MESSAGE = "new_message";
     public static final String ON_UPDATE_CONVERSATION = "update_conversation";
     public static final String ON_SHOW_NOTIFICATION = "show_notification";
     public static final String ON_SHOW_NOTI_IN_MSG_ACTIVITY = "show_notification";
+    public static final String ON_TYPING = "typing";
+    public static final String ON_STOP_TYPING = "stop_typing";
 
     private static ChatHelper chatInstance;
     private Socket socket;

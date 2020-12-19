@@ -1,15 +1,20 @@
 package com.sinhvien.appchatsocketio.activity;
 
+import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
@@ -43,24 +48,34 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedList;
 
 import io.socket.client.Socket;
 import io.socket.emitter.Emitter;
 
-public class MessageActivity extends AppCompatActivity implements Emitter.Listener {
+public class MessageActivity extends AppCompatActivity {
     // View
     private Toolbar toolbarTitle;
     private RecyclerView rvMessage;
     private EditText edtMessage;
     private ImageButton btnSend;
+    private LinearLayout layoutTyping;
+    private TextView tvUsersTyping;
     // Data
     private Room room;
     private User user;
     private ArrayList<Message> messages;
+    private LinkedList<String> usersTypings;
     // searchedUserId is used to create single if the user and searched user havent chatted yet
     private String searchedUserId;
     private MessageAdapter adapter;
     private Socket socket;
+    // Listener
+    private ShowNotiInMessageActivityListener showNotiListener;
+    private TextChangedListener textChangedListener;
+    private TypingListener typingListener;
+    private StopTypingListener stopTypingListener;
+    private NewMessageListener newMessageListener;
 
     private void Init(){
         Mapping();
@@ -74,6 +89,8 @@ public class MessageActivity extends AppCompatActivity implements Emitter.Listen
         rvMessage = findViewById(R.id.rvMessage);
         edtMessage = findViewById(R.id.edtMessage);
         btnSend = findViewById(R.id.btnSendMessage);
+        tvUsersTyping = findViewById(R.id.tvUsersTyping);
+        layoutTyping = findViewById(R.id.layoutTyping);
     }
 
     private void SetActionBar() {
@@ -95,6 +112,12 @@ public class MessageActivity extends AppCompatActivity implements Emitter.Listen
         rvMessage.setHasFixedSize(true); // Improve performance of rv
         rvMessage.setLayoutManager(linearLayoutManager);
         rvMessage.setAdapter(adapter);
+        usersTypings = new LinkedList<>();
+        showNotiListener = new ShowNotiInMessageActivityListener();
+        textChangedListener = new TextChangedListener();
+        typingListener = new TypingListener();
+        stopTypingListener = new StopTypingListener();
+        newMessageListener = new NewMessageListener();
     }
 
     private void CheckSocketStatus() {
@@ -253,24 +276,6 @@ public class MessageActivity extends AppCompatActivity implements Emitter.Listen
         return obj;
     }
 
-    private Emitter.Listener OnNewMessage = new Emitter.Listener() {
-        @Override
-        public void call(final Object... args) {
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    JSONObject data = (JSONObject) args[0];
-                    try {
-                        Log.i("abc", data.toString());
-                        AppendNewMessage(data);
-                    } catch (Exception ex) {
-                        Log.i("newmessage", ex.toString());
-                    }
-                }
-            });
-        }
-    };
-
     private void AppendNewMessage(JSONObject data) {
         try {
             String roomId = data.getString("roomId");
@@ -310,45 +315,224 @@ public class MessageActivity extends AppCompatActivity implements Emitter.Listen
                 SendMessage();
             }
         });
+        edtMessage.addTextChangedListener(textChangedListener);
         // Off event ON_SHOW_NOTIFICATION to reset the old and update new
         socket.off(ChatHelper.ON_SHOW_NOTIFICATION);
         socket.off(ChatHelper.ON_UPDATE_CONVERSATION);
-        socket.on(ChatHelper.ON_SHOW_NOTI_IN_MSG_ACTIVITY, this);
-        socket.on(ChatHelper.ON_NEW_MESSAGE, OnNewMessage);
+        socket.on(ChatHelper.ON_SHOW_NOTI_IN_MSG_ACTIVITY, showNotiListener);
+        socket.on(ChatHelper.ON_NEW_MESSAGE, newMessageListener);
+        socket.on(ChatHelper.ON_TYPING, typingListener);
+        socket.on(ChatHelper.ON_STOP_TYPING, stopTypingListener);
+    }
+
+    private class NewMessageListener implements Emitter.Listener {
+
+        @Override
+        public void call(final Object... args) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    JSONObject data = (JSONObject) args[0];
+                    try {
+                        AppendNewMessage(data);
+                    } catch (Exception ex) {
+                        Log.i("newmessage", ex.toString());
+                    }
+                }
+            });
+        }
+    }
+
+    private class ShowNotiInMessageActivityListener implements Emitter.Listener {
+        @RequiresApi(api = Build.VERSION_CODES.M)
+        @Override
+        public void call(Object... args) {
+            JSONObject data = (JSONObject) args[0];
+            try {
+                String roomName = data.getString("name");
+                String content = data.getString("content");
+                String roomId = data.getString("roomId");
+                if(roomId.equals(room.getIdRoom())) return;
+                Room room = new Room();
+                room.setIdRoom(roomId);
+                room.setName(roomName);
+                NotificationHelper notificationHelper = new NotificationHelper(
+                        MessageActivity.this,
+                        user,
+                        room
+                );
+                notificationHelper.SendNoti(content);
+            } catch (JSONException ex) {
+                Toast.makeText(MessageActivity.this, ex.getLocalizedMessage(), Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    private class TextChangedListener implements TextWatcher {
+        boolean typingFlag = false;
+
+        private void HandleTyping() {
+            if(!typingFlag) {
+                JSONObject data = SetData();
+                socket.emit(ChatHelper.EMIT_TYPING, data);
+                typingFlag = true;
+            }
+        }
+
+        private void HandleStopTyping() {
+            JSONObject data = SetData();
+            socket.emit(ChatHelper.EMIT_STOP_TYPING, data);
+            typingFlag = false;
+        }
+
+        private JSONObject SetData() {
+            HashMap hashMap = new HashMap();
+            hashMap.put("roomId", room.getIdRoom());
+            hashMap.put("userName", user.getDisplayName());
+            return new JSONObject(hashMap);
+        }
+
+        @Override
+        public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+        }
+
+        @Override
+        public void onTextChanged(CharSequence s, int start, int before, int count) {
+            if(!s.toString().isEmpty()) {
+                HandleTyping();
+                return;
+            }
+            HandleStopTyping();
+        }
+
+        @Override
+        public void afterTextChanged(Editable s) {
+
+        }
+    }
+
+    private class TypingListener implements Emitter.Listener {
+
+        private String SetTypingText() {
+            StringBuffer stringBuffer = new StringBuffer();
+            String typingText;
+            for(String user : usersTypings) {
+                stringBuffer.append(user + ", ");
+            }
+            typingText = stringBuffer.substring(0, stringBuffer.length() - 2);
+            if(usersTypings.size() == 1) {
+                typingText += " is typing";
+            } else {
+                typingText += " are typing";
+            }
+            return typingText;
+        }
+
+        private void HandleUsersTyping(String userName) {
+            usersTypings.add(userName);
+            layoutTyping.setVisibility(View.VISIBLE);
+            String typingText = SetTypingText();
+            tvUsersTyping.setText(typingText);
+        }
+
+        @Override
+        public void call(final Object... args) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        JSONObject data = (JSONObject) args[0];
+                        String userName = data.getString("userName");
+                        String roomId = data.getString("roomId");
+                        if(roomId.equals(room.getIdRoom())) {
+                            HandleUsersTyping(userName);
+                        }
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+        }
+    }
+
+    private class StopTypingListener implements Emitter.Listener {
+
+        private String SetTypingTest() {
+            StringBuffer stringBuffer = new StringBuffer();
+            String typingTest = "";
+            for(String user : usersTypings) {
+                stringBuffer.append(user + ", ");
+            }
+            typingTest = stringBuffer.substring(0, stringBuffer.length() - 2);
+            if(usersTypings.size() == 1) {
+                typingTest += " is typing";
+            } else {
+                typingTest += " are typing";
+            }
+            return typingTest;
+        }
+
+        private void RemoveUserFromUserTypingList(String userName) {
+            if(usersTypings.indexOf(userName) >= 0) {
+                usersTypings.remove(userName);
+            }
+        }
+
+        private void HandleStopTyping(String userName) {
+            RemoveUserFromUserTypingList(userName);
+            if(usersTypings.size() == 0) {
+                OffLayoutTyping();
+                return;
+            }
+            String typingTest = SetTypingTest();
+            tvUsersTyping.setText(typingTest);
+        }
+
+        @Override
+        public void call(final Object... args) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    JSONObject data = (JSONObject) args[0];
+                    try {
+                        String userName = data.getString("userName");
+                        String roomId = data.getString("roomId");
+                        if(roomId.equals(room.getIdRoom())) {
+                            HandleStopTyping(userName);
+                        }
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+        }
+    }
+
+    private void OffLayoutTyping() {
+        tvUsersTyping.setText("");
+        layoutTyping.setVisibility(View.INVISIBLE);
     }
 
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         Toast.makeText(this, "new intent", Toast.LENGTH_SHORT).show();
+        edtMessage.setText("");
         user = (User) intent.getSerializableExtra("User");
         room = (Room) intent.getSerializableExtra("Room");
         messages.clear();
         adapter.notifyDataSetChanged();
         FetchMessagesInRoom();
         toolbarTitle.setTitle(room.getName());
+        usersTypings = new LinkedList<>();
+        OffLayoutTyping();
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.M)
     @Override
-    public void call(Object... args) {
-        JSONObject data = (JSONObject) args[0];
-        try {
-            String roomName = data.getString("name");
-            String content = data.getString("content");
-            String roomId = data.getString("roomId");
-            if(roomId.equals(this.room.getIdRoom())) return;
-            Room room = new Room();
-            room.setIdRoom(roomId);
-            room.setName(roomName);
-            NotificationHelper notificationHelper = new NotificationHelper(
-                    this,
-                    user,
-                    room
-            );
-            notificationHelper.SendNoti(content);
-        } catch (JSONException ex) {
-            Toast.makeText(this, ex.getLocalizedMessage(), Toast.LENGTH_SHORT).show();
-        }
+    protected void onDestroy() {
+        super.onDestroy();
+        // set text to "" to call event text change
+        edtMessage.setText("");
     }
 }
