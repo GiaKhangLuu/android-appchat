@@ -1,7 +1,9 @@
 package com.sinhvien.appchatsocketio.adapter;
 
+import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Build;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -9,6 +11,7 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.android.volley.Request;
@@ -86,6 +89,7 @@ public class SearchedUserToChatAdapter extends
                 url,
                 new JSONObject(params),
                 new Response.Listener<JSONArray>() {
+                    @RequiresApi(api = Build.VERSION_CODES.M)
                     @Override
                     public void onResponse(JSONArray response) {
                         // Case user and searchedUser used to chat => render old messages
@@ -93,6 +97,7 @@ public class SearchedUserToChatAdapter extends
                             try {
                                 String roomId = response.getJSONObject(0).getString("_id");
                                 MoveToMessageActivity(roomId, searchedUserDisplayName, searchedUserId);
+                                RemoveNoti(roomId);
                             } catch (JSONException e) {
                                 e.printStackTrace();
                             }
@@ -109,6 +114,12 @@ public class SearchedUserToChatAdapter extends
                 });
         RequestQueue messageQueue = VolleySingleton.getInstance(context).getRequestQueue();
         messageQueue.add(request);
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.M)
+    public void RemoveNoti(String roomID) {
+        int roomIdHashCode = roomID.hashCode();
+        context.getSystemService(NotificationManager.class).cancel(roomIdHashCode);
     }
 
     @Override

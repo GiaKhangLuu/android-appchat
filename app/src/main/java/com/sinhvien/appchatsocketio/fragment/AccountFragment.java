@@ -140,6 +140,8 @@ public class AccountFragment extends Fragment {
         socket.off(ChatHelper.ON_UPDATE_CONVERSATION);
         socket.off(ChatHelper.ON_NEW_MESSAGE);
         socket.off(ChatHelper.ON_SHOW_NOTI_IN_MSG_ACTIVITY);
+        socket.off(ChatHelper.ON_STOP_TYPING);
+        socket.off(ChatHelper.ON_TYPING);
         socket.on(ChatHelper.ON_SHOW_NOTIFICATION, showNotiListener);
     }
 }

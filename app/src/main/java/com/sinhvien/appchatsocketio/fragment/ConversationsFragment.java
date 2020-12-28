@@ -1,5 +1,6 @@
 package com.sinhvien.appchatsocketio.fragment;
 
+import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -36,6 +37,7 @@ import com.sinhvien.appchatsocketio.activity.MessageActivity;
 import com.sinhvien.appchatsocketio.adapter.ConversationAdapter;
 import com.sinhvien.appchatsocketio.helper.ChatHelper;
 import com.sinhvien.appchatsocketio.helper.CustomJsonArrayRequest;
+import com.sinhvien.appchatsocketio.helper.OnShowNotiListener;
 import com.sinhvien.appchatsocketio.helper.VolleySingleton;
 import com.sinhvien.appchatsocketio.model.Conversation;
 import com.sinhvien.appchatsocketio.model.Message;
@@ -59,6 +61,7 @@ public class ConversationsFragment extends Fragment {
     private LinkedList<Conversation> conversations;
     private ConversationAdapter adapter;
     private Socket socket;
+    private OnShowNotiListener onShowNotiListener;
 
     @Nullable
     @Override
@@ -95,6 +98,7 @@ public class ConversationsFragment extends Fragment {
 
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     private void Init(View view) {
+        onShowNotiListener = new OnShowNotiListener(user, getContext());
         socket = ChatHelper.getInstace(getContext()).GetSocket();
         rvConversation = view.findViewById(R.id.rvConversations);
         conversations = new LinkedList<>();
@@ -261,9 +265,11 @@ public class ConversationsFragment extends Fragment {
     public void onStart() {
         super.onStart();
         socket.off(ChatHelper.ON_NEW_MESSAGE);
-        socket.off(ChatHelper.ON_SHOW_NOTIFICATION);
         socket.off(ChatHelper.ON_SHOW_NOTI_IN_MSG_ACTIVITY);
+        socket.off(ChatHelper.ON_TYPING);
+        socket.off(ChatHelper.ON_STOP_TYPING);
         socket.on(ChatHelper.ON_UPDATE_CONVERSATION, OnUpdateConversation);
+        socket.on(ChatHelper.ON_SHOW_NOTIFICATION, onShowNotiListener);
         FetchConversations();
     }
 }

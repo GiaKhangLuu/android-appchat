@@ -1,7 +1,9 @@
 package com.sinhvien.appchatsocketio.adapter;
 
+import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Build;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -11,6 +13,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.sinhvien.appchatsocketio.R;
@@ -49,17 +52,25 @@ public class ConversationAdapter extends
         holder.tvTime.setText(conv.getTime());
 
         holder.itemView.setOnClickListener(new View.OnClickListener() {
+            @RequiresApi(api = Build.VERSION_CODES.M)
             @Override
             public void onClick(View v) {
                 Room room = new Room();
                 room.setName(conv.getName());
                 room.setIdRoom(conv.getRoomId());
+                RemoveNoti(room.getIdRoom());
                 Intent intent = new Intent(context, MessageActivity.class);
                 intent.putExtra("User", user);
                 intent.putExtra("Room", room);
                 context.startActivity(intent);
             }
         });
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.M)
+    public void RemoveNoti(String roomID) {
+        int roomIdHashCode = roomID.hashCode();
+        context.getSystemService(NotificationManager.class).cancel(roomIdHashCode);
     }
 
     @Override
