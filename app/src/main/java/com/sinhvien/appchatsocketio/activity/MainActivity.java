@@ -108,6 +108,7 @@ public class MainActivity extends AppCompatActivity
     // The dialog fragment receives a reference to this Activity through the
     // Fragment.onAttach() callback, which it uses to call the following methods
     // defined by the LeaveGroupDialog.LeaveGroupDialogListener interface
+    @RequiresApi(api = Build.VERSION_CODES.M)
     @Override
     public void onDialogPositiveClick(DialogFragment dialogFragment) {
         // User touched the dialog's positive button
@@ -115,7 +116,14 @@ public class MainActivity extends AppCompatActivity
         if(roomId != "") {
             ((GroupFragment) getSupportFragmentManager().findFragmentById(R.id.containerMain))
                     .LeaveRoom(roomId);
+            RemoveNoti(roomId);
         }
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.M)
+    public void RemoveNoti(String roomID) {
+        int roomIdHashCode = roomID.hashCode();
+        getSystemService(NotificationManager.class).cancel(roomIdHashCode);
     }
 
     @RequiresApi(api = Build.VERSION_CODES.M)
